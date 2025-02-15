@@ -22,7 +22,7 @@ from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassificati
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-openai.api_key = "replace"
+openai.api_key = "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"
 
 st.title("Music to Text")
 
