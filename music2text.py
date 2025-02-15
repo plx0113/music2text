@@ -25,9 +25,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Access the API key stored under the [general] section in secrets.toml
 api_key = st.secrets["general"]["OPENAI_API_KEY"]
 
-# Now you can use your API key in your application
-st.write("API key loaded successfully!")  # For testing; remove in production
-
 
 st.title("Music to Text")
 
