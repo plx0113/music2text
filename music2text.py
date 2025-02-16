@@ -20,6 +20,11 @@ from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassificati
 import os
 import requests
 
+import os
+import requests
+import logging
+import streamlit as st
+
 # DigitalOcean Spaces URLs for your models
 MODEL_URL = "https://music2text-models.nyc3.digitaloceanspaces.com/genres_classification/model.safetensors"
 PYTORCH_URL = "https://music2text-models.nyc3.digitaloceanspaces.com/genres_classification/pytorch_model.bin"
@@ -37,13 +42,20 @@ def download_file(url, local_filename):
     print("Download complete.")
 
 def load_models():
-    download_file(MODEL_URL, "model.safetensors")
-    download_file(PYTORCH_URL, "pytorch_model.bin")
-    # Now load your models using the local file paths
+    # Ensure the target directory exists
+    target_dir = "music_genres_classification"
+    os.makedirs(target_dir, exist_ok=True)
+    
+    # Download files into the target directory
+    download_file(MODEL_URL, os.path.join(target_dir, "model.safetensors"))
+    download_file(PYTORCH_URL, os.path.join(target_dir, "pytorch_model.bin"))
+    
+    # Now you can load your models using the files in the target directory
+    # For example:
+    # model_path = os.path.join(target_dir, "model.safetensors")
+    # load_model_function(model_path)
 
 if __name__ == "__main__":
-    # Your Streamlit app initialization
-    import streamlit as st
     st.title("Music to Text App")
     load_models()
     # Rest of your app code...
@@ -51,10 +63,11 @@ if __name__ == "__main__":
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Access the OpenAI API key from environment variables
 api_key = os.getenv("OPENAI_API_KEY")
-
 if not api_key:
     raise ValueError("No OPENAI_API_KEY environment variable found.")
+
 
 st.title("Music to Text")
 
