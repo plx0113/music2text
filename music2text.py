@@ -66,68 +66,45 @@ def safe_float(value):
 def extract_audio_features(audio_file_path):
     """Extracts key, tempo, and root chroma from the audio file along with other features."""
     try:
-        chunk_duration = 30  # Process in 30-second chunks
-        sr = 16000  # Lower sample rate to reduce memory usage
+        max_duration = 30
+        y, sr = librosa.load(audio_file_path, sr=None, duration=max_duration)
+        logging.info(f"Librosa loaded audio: {audio_file_path} with sample rate {sr} and shape {y.shape}")
+        
+        if y is None or len(y) == 0:
+            raise ValueError("Librosa failed: Empty or unreadable file")
+        
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        # Fix the DeprecationWarning by using safe_float
+        tempo = safe_float(tempo)
 
-        # Get audio duration without loading full file
-        total_duration = librosa.get_duration(filename=audio_file_path)
-        num_chunks = int(np.ceil(total_duration / chunk_duration))
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+        chroma_avg = np.mean(chroma, axis=1)
+        top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
+        chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        root_chroma = [chromatic_scale[i] for i in top_chroma_indices]
 
-        features = []
-        for i in range(num_chunks):
-            start_time = i * chunk_duration  # Start time in seconds
-            y_chunk, sr = librosa.load(audio_file_path, sr=sr, offset=start_time, duration=chunk_duration)  # Load only 30s at a time
+        from keyfinder import Tonal_Fragment
+        tonal = Tonal_Fragment(y, sr)
+        key = tonal.key
 
-            if y_chunk is None or len(y_chunk) == 0:
-                logging.warning(f"Skipping empty chunk {i + 1}")
-                continue
+        rms = librosa.feature.rms(y=y)[0]
+        try:
+            onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+            articulation_rate = np.mean(onset_env)
+        except Exception as e:
+            logging.error(f"Error calculating articulation rate: {e}")
+            articulation_rate = None
 
-            try:
-                tempo, _ = librosa.beat.beat_track(y=y_chunk, sr=sr)
-                tempo = float(tempo)  # Fix NumPy deprecation warning
-
-                chroma = librosa.feature.chroma_stft(y=y_chunk, sr=sr)
-                chroma_avg = np.mean(chroma, axis=1)
-                top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
-                chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-                root_chroma = [chromatic_scale[i] for i in top_chroma_indices]
-
-                from keyfinder import Tonal_Fragment
-                tonal = Tonal_Fragment(y_chunk, sr)
-                key = tonal.key
-
-                rms = librosa.feature.rms(y=y_chunk)[0]
-                spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=y_chunk, sr=sr))
-                spectral_bandwidth = np.mean(librosa.feature.spectral_bandwidth(y=y_chunk, sr=sr))
-                y_harmonic, y_percussive = librosa.effects.hpss(y_chunk)
-                mfccs = librosa.feature.mfcc(y=y_chunk, sr=sr, n_mfcc=33)
-
-                features.append({
-                    "chunk": i + 1,
-                    "tempo": tempo,
-                    "root_chroma": root_chroma,
-                    "key": key,
-                    "rms": rms.tolist(),
-                    "spectral_centroid": spectral_centroid,
-                    "spectral_bandwidth": spectral_bandwidth
-                })
-            except Exception as e:
-                logging.error(f"Feature extraction failed for chunk {i + 1}: {e}")
-
-        # Merge chunked feature results
-        if len(features) > 0:
-            avg_tempo = np.mean([f["tempo"] for f in features if "tempo" in f])
-            root_chroma = features[0]["root_chroma"]
-            key = features[0]["key"]
-        else:
-            avg_tempo = None
-            root_chroma = None
-            key = None
-
-        return avg_tempo, root_chroma, key
+        spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
+        spectral_bandwidth = np.mean(librosa.feature.spectral_bandwidth(y=y, sr=sr))
+        y_harmonic, y_percussive = librosa.effects.hpss(y)
+        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=33)
+        return (tempo, root_chroma, key, rms, articulation_rate, 
+                spectral_centroid, spectral_bandwidth, y, sr, 
+                y_harmonic, y_percussive, mfccs)
     except Exception as e:
         logging.error(f"Feature extraction error: {e}")
-        return None, None, None
+        return (None,)*12
 
 def convert_numpy_data(obj):
     """Converts numpy data types to serializable Python types."""
