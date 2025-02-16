@@ -1,7 +1,7 @@
 [server]
 headless = true
 port = 8501
-enableCORS = true  # Set to true if you need cross-origin requests
+enableCORS = false  # Set to true if you need cross-origin requests
 
 [theme]
 base = "dark"  # Options: "light" or "dark"
