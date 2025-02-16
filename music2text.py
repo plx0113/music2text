@@ -51,10 +51,10 @@ if __name__ == "__main__":
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+api_key = os.getenv("OPENAI_API_KEY")
 
-# Access the API key stored under the [general] section in secrets.toml
-api_key = st.secrets["general"]["OPENAI_API_KEY"]
-
+if not api_key:
+    raise ValueError("No OPENAI_API_KEY environment variable found.")
 
 st.title("Music to Text")
 
