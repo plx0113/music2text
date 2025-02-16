@@ -179,8 +179,14 @@ audio_classifier_hf = load_audio_classifier()
 # ====== Attempt to load local model from 'music_genres_classification' folder ======
 try:
     from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassification
-    processor = Wav2Vec2FeatureExtractor.from_pretrained("music_genres_classification")
-    model = AutoModelForAudioClassification.from_pretrained("music_genres_classification", trust_remote_code=True)
+    
+    model_path = "/root/music2text/music_genres_classification"
+
+    processor = Wav2Vec2FeatureExtractor.from_pretrained(model_path)
+    model = AutoModelForAudioClassification.from_pretrained(model_path, trust_remote_code=True).to("cpu")
+
+    st.success("Model successfully loaded from local directory.")
+
 except Exception as e:
     st.error(f"Error loading model directly: {e}")
     processor = None
