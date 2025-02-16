@@ -17,6 +17,36 @@ from sklearn.preprocessing import StandardScaler
 from transformers import pipeline  # For the HF pipeline
 import torch
 from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassification
+import os
+import requests
+
+# DigitalOcean Spaces URLs for your models
+MODEL_URL = "https://music2text-models.nyc3.digitaloceanspaces.com/genres_classification/model.safetensors"
+PYTORCH_URL = "https://music2text-models.nyc3.digitaloceanspaces.com/genres_classification/pytorch_model.bin"
+
+def download_file(url, local_filename):
+    if os.path.exists(local_filename):
+        print(f"{local_filename} already exists, skipping download.")
+        return
+    print(f"Downloading {local_filename}...")
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    with open(local_filename, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
+    print("Download complete.")
+
+def load_models():
+    download_file(MODEL_URL, "model.safetensors")
+    download_file(PYTORCH_URL, "pytorch_model.bin")
+    # Now load your models using the local file paths
+
+if __name__ == "__main__":
+    # Your Streamlit app initialization
+    import streamlit as st
+    st.title("Music to Text App")
+    load_models()
+    # Rest of your app code...
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
