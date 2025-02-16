@@ -66,7 +66,8 @@ def safe_float(value):
 def extract_audio_features(audio_file_path):
     """Extracts key, tempo, and root chroma from the audio file along with other features."""
     try:
-        y, sr = librosa.load(audio_file_path, sr=None)
+        max_duration = 30
+        y, sr = librosa.load(audio_file_path, sr=None, duration=max_duration)
         logging.info(f"Librosa loaded audio: {audio_file_path} with sample rate {sr} and shape {y.shape}")
         
         if y is None or len(y) == 0:
