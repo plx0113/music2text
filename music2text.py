@@ -293,7 +293,8 @@ if __name__ == "__main__":
                                 "role": "system",
                                 "content": f"""
 You are an expert music analyst AI with a passion for music. Analyze the provided information to deduce the music's genre, style, and potential emotional impact. Provide insights about the potential arrangement of the piece based on the number of segments.
-Examine the estimated genre, and focus on the gerne with the highest score, and think logically how the other genres scores contribute to the song. Make connections about this genre to other songs with the same genre.
+Examine the estimated genre, and focus on the gerne with the highest score, and think logically how the other genres scores contribute to the song. If you recognize a song by the song title and the rest of the analysis tells you a specific song is being played, write out the full lyrics and discuss word play and lyrical content.
+Make connections about this genre to other songs with the same genre.
 
 - Tempo: {tempo} BPM
 - Key: {key}
