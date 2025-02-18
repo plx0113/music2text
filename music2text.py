@@ -53,7 +53,6 @@ def load_models():
     download_file(PYTORCH_URL, os.path.join(target_dir, "pytorch_model.bin"))
     # The torch.classes warning typically does not block usage—it's often benign.
 
-# =========== DeprecationWarning fix at line 146 ===========
 def safe_float(value):
     """
     Safely convert a scalar or array-like numeric to float, 
@@ -67,14 +66,14 @@ def extract_audio_features(audio_file_path):
     """Extracts key, tempo, and root chroma from the audio file along with other features."""
     try:
         max_duration = 30
-        y, sr = librosa.load(audio_file_path, sr=None, duration=max_duration)
+        # ▼▼▼ Updated line: mono=True, dtype='float32' ▼▼▼
+        y, sr = librosa.load(audio_file_path, sr=None, duration=max_duration, mono=True, dtype='float32')
         logging.info(f"Librosa loaded audio: {audio_file_path} with sample rate {sr} and shape {y.shape}")
         
         if y is None or len(y) == 0:
             raise ValueError("Librosa failed: Empty or unreadable file")
         
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        # Fix the DeprecationWarning by using safe_float
         tempo = safe_float(tempo)
 
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
@@ -143,7 +142,6 @@ def convert_to_wav(audio_file, temp_dir, sr=44100):
         logging.error(f"Conversion to WAV error: {e}")
         return None
 
-# ===== Function to call OpenAI with retry logic =====
 def call_openai_with_retry(messages, model="gpt-4", max_retries=5, initial_delay=1):
     """Calls OpenAI with retry logic and exponential backoff."""
     for attempt in range(max_retries):
@@ -177,23 +175,16 @@ def load_audio_classifier():
 
 audio_classifier_hf = load_audio_classifier()
 
-# ====== Attempt to load local model from 'music_genres_classification' folder ======
 try:
-    from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassification
-    
     model_path = "/root/music2text/music_genres_classification"
-
     processor = Wav2Vec2FeatureExtractor.from_pretrained(model_path)
     model = AutoModelForAudioClassification.from_pretrained(model_path, trust_remote_code=True).to("cpu")
-
     st.success("Model successfully loaded from local directory.")
-
 except Exception as e:
     st.error(f"Error loading model directly: {e}")
     processor = None
     model = None
 
-# ====== Streamlit UI ======
 if __name__ == "__main__":
     st.title("Music to Text App")
     load_models()
@@ -319,3 +310,4 @@ Based on this information, what can you deduce about the song? What instruments 
             finally:
                 status_text.empty()
                 logging.info("Processing complete (temporary directory cleaned up automatically).")
+
