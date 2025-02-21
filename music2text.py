@@ -63,12 +63,30 @@ def safe_float(value):
         return value.item()
     return float(value)
 
+# Truncate the audio before conversion
+def convert_to_wav(audio_file, temp_dir, sr=44100, max_duration=30):
+    """Converts the uploaded audio file to WAV format using pydub and truncates to max_duration."""
+    try:
+        file_extension = audio_file.name.split(".")[-1].lower()
+        input_file_path = os.path.join(temp_dir, "input." + file_extension)
+        with open(input_file_path, "wb") as f:
+            f.write(audio_file.read())
+        audio = AudioSegment.from_file(input_file_path, format=file_extension)
+
+        # Truncate audio to 30 seconds before converting
+        truncated_audio = audio[:max_duration * 1000]  # pydub works in milliseconds
+        wav_file_path = os.path.join(temp_dir, "output.wav")
+        truncated_audio.export(wav_file_path, format="wav", parameters=["-ar", str(sr)])
+        return wav_file_path
+    except Exception as e:
+        logging.error(f"Conversion to WAV error: {e}")
+        return None
+
 def extract_audio_features(audio_file_path):
     """Extracts key, tempo, and root chroma from the audio file along with other features."""
     try:
-        max_duration = 30
         # Updated line: mono=True, dtype='float32'
-        y, sr = librosa.load(audio_file_path, sr=None, duration=max_duration, mono=True, dtype='float32')
+        y, sr = librosa.load(audio_file_path, sr=None, mono=True, dtype='float32')
         logging.info(f"Librosa loaded audio: {audio_file_path} with sample rate {sr} and shape {y.shape}")
 
         if y is None or len(y) == 0:
@@ -125,21 +143,6 @@ def segment_audio(y, sr, segment_duration=10):
     num_segments = len(y) // segment_length
     segments = [y[i * segment_length:(i + 1) * segment_length] for i in range(num_segments)]
     return segments
-
-def convert_to_wav(audio_file, temp_dir, sr=44100):
-    """Converts the uploaded audio file to WAV format using pydub."""
-    try:
-        file_extension = audio_file.name.split(".")[-1].lower()
-        input_file_path = os.path.join(temp_dir, "input." + file_extension)
-        with open(input_file_path, "wb") as f:
-            f.write(audio_file.read())
-        audio = AudioSegment.from_file(input_file_path, format=file_extension)
-        wav_file_path = os.path.join(temp_dir, "output.wav")
-        audio.export(wav_file_path, format="wav", parameters=["-ar", str(sr)])
-        return wav_file_path
-    except Exception as e:
-        logging.error(f"Conversion to WAV error: {e}")
-        return None
 
 def call_openai_with_retry(messages, model="gpt-4", max_retries=5, initial_delay=1):
     """Calls OpenAI with retry logic and exponential backoff."""
