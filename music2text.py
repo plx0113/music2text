@@ -49,7 +49,7 @@ def load_models():
     # Ensure the target directory exists
     target_dir = "music_genres_classification"
     os.makedirs(target_dir, exist_ok=True)
-    
+
     # Download files into the target directory from DigitalOcean Spaces
     download_file(MODEL_URL, os.path.join(target_dir, "model.safetensors"))
     download_file(PYTORCH_URL, os.path.join(target_dir, "pytorch_model.bin"))
@@ -70,10 +70,10 @@ def extract_audio_features(audio_file_path):
         # Updated line: mono=True, dtype='float32'
         y, sr = librosa.load(audio_file_path, sr=None, duration=max_duration, mono=True, dtype='float32')
         logging.info(f"Librosa loaded audio: {audio_file_path} with sample rate {sr} and shape {y.shape}")
-        
+
         if y is None or len(y) == 0:
             raise ValueError("Librosa failed: Empty or unreadable file")
-        
+
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
         tempo = safe_float(tempo)
 
@@ -291,8 +291,12 @@ if __name__ == "__main__":
                                 "role": "system",
                                 "content": f"""
 You are an expert music analyst AI with a passion for music. Analyze the provided information to deduce the music's genre, style, and potential emotional impact. Provide insights about the potential arrangement of the piece based on the number of segments.
+<<<<<<< HEAD
+Examine the estimated genre, and focus on the gerne with the highest score, and think logically how the other genres scores contribute to the song.
+=======
 Examine the estimated genre, and focus on the genre with the highest score, and think logically how the other genres scores contribute to the song.
 If you recognize the song by its title and analysis, discuss its lyrical meaning, themes, and wordplay. Highlight key phrases and how they contribute to the song’s impact.
+>>>>>>> 7f4e25a8018b8df4d30d4bf73eefd9fba90c528f
 Make connections about this genre to other songs with the same genre.
 
 - Tempo: {tempo} BPM
@@ -310,7 +314,7 @@ Make connections about this genre to other songs with the same genre.
                                 "role": "user", "content": json.dumps(audio_analysis)
                             }
                         ])
-                    
+
                     analysis = asyncio.run(get_analysis())
                     st.write("AI Analysis:", analysis["choices"][0]["message"]["content"])
             except Exception as e:
