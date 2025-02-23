@@ -16,6 +16,7 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 from transformers import pipeline  # For the HF pipeline
 import torch
+import math
 from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassification
 import requests
 import asyncio
@@ -223,10 +224,13 @@ if __name__ == "__main__":
 
                     audio_features_extracted = tempo is not None and root_chroma is not None and key is not None
                     if audio_features_extracted:
-                        st.write(f"Estimated Tempo: {tempo} BPM")
+                        rounded_tempo = math.ceil(tempo)
+                        st.write(f"Estimated Tempo: {rounded_tempo} BPM")
                         st.write(f"Root Chroma: {root_chroma}")
                         st.write(f"Detected Key: {key}")
-                        st.write(f"Articulation Rate: {articulation_rate}")
+                        rounded_articulation_rate = round(articulation_rate, 2)
+                        st.write(f"Articulation Rate: {rounded_articulation_rate}")
+
                     else:
                         st.warning("Could not extract audio features.")
                         st.stop()
@@ -235,13 +239,15 @@ if __name__ == "__main__":
                     estimated_genre_summary = ""
                     if audio_classifier_hf is not None:
                         hf_predictions = audio_classifier_hf(wav_file_path)
-                        estimated_genre_summary = ", ".join(
-                            [f"{pred['label']} ({pred['score']:.2f})" for pred in hf_predictions]
-                        )
-                        st.write("Estimated Genre:")
-                        st.write(estimated_genre_summary)
+                       genre_mapping = {"disco": "electronic"}
+                    estimated_genre_summary = ", ".join(
+                      [f"{genre_mapping.get(pred['label'].lower(), pred['label'])} ({pred['score']:.2f})" for pred in hf_predictions]
+                    )
+                    st.write("Estimated Genre:")
+                    st.write(estimated_genre_summary)
+
                     else:
-                        st.warning("Genre classifier could not be loaded.")
+                    st.warning("Genre classifier could not be loaded.")
 
                     # 4. Get the file name
                     file_name = audio_file.name
@@ -293,14 +299,13 @@ if __name__ == "__main__":
                             {
                                 "role": "system",
                                 "content": f"""
-You are an expert music analyst AI with a passion for music. You are functionally listening to the music. 
-Analyze the provided information to deduce the music's genre, style, and potential emotional impact. 
-Provide insights about the potential arrangement of the piece based on the number of segments, keep in mind we only process 30 seconds of audio currently (don't mention that though).
-Keep in mind tempos may be doubled or halfed, for example if a song has Allegretto in the title, which is typically 100 - 120 BPM, but the BPM reported is 224, you know must know the real tempo is around 112.  
-Examine the estimated genre, and focus on the gerne with the highest score, and think logically how the other genres scores contribute to the song.
-If you recognize the song by its title and analysis, discuss its lyrical meaning, themes, and wordplay. 
-Highlight key phrases and how they contribute to the song's impact.
-Make connections about this genre to other songs with the same genre.
+You are an expert music analyst with a deep passion for music and an exceptional ability to interpret audio features as if you were truly listening. Using the provided data—including tempo, key, estimated genre probabilities, articulation rate, and segment information—deduce the song's genre, style, and emotional impact. Your analysis should consider the following:
+Tempo Interpretation: Recognize that the reported tempo might be doubled or halved. For example, if a song titled with an Allegretto indication shows a BPM of 224, you should infer the real tempo is closer to 112 BPM.
+Arrangement Analysis: Evaluate the musical structure and arrangement based on the number of segments, transitions, and other provided details.
+Genre Examination: Focus on the genre with the highest score while logically considering how the other genre probabilities influence the overall classification.
+Lyrical Insights: If the song's title and analysis suggest familiarity, delve into its lyrical meaning, themes, and wordplay. Highlight key phrases and explain how they contribute to the song's impact. Draw connections between the song and other tracks within the same genre.
+Listening Impersonation: Always maintain a tone of active, attentive listening without revealing any limitations or that you are not actually hearing the audio.
+Your goal is to provide a comprehensive, insightful analysis that ties together all these elements into a coherent interpretation of the song.
 
 - Tempo: {tempo} BPM
 - Key: {key}
