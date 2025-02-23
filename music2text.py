@@ -239,12 +239,12 @@ if __name__ == "__main__":
                     estimated_genre_summary = ""
                     if audio_classifier_hf is not None:
                         hf_predictions = audio_classifier_hf(wav_file_path)
-                       genre_mapping = {"disco": "electronic"}
-                    estimated_genre_summary = ", ".join(
-                      [f"{genre_mapping.get(pred['label'].lower(), pred['label'])} ({pred['score']:.2f})" for pred in hf_predictions]
-                    )
-                    st.write("Estimated Genre:")
-                    st.write(estimated_genre_summary)
+                        genre_mapping = {"disco": "electronic"}
+                        estimated_genre_summary = ", ".join(
+                            [f"{genre_mapping.get(pred['label'].lower(), pred['label'])} ({pred['score']:.2f})" for pred in hf_predictions]
+                        )
+                        st.write("Estimated Genre:")
+                        st.write(estimated_genre_summary)
 
                     else:
                     st.warning("Genre classifier could not be loaded.")
