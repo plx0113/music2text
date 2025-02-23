@@ -247,7 +247,7 @@ if __name__ == "__main__":
                         st.write(estimated_genre_summary)
 
                     else:
-                    st.warning("Genre classifier could not be loaded.")
+                        st.warning("Genre classifier could not be loaded.")
 
                     # 4. Get the file name
                     file_name = audio_file.name
