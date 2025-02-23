@@ -228,8 +228,7 @@ if __name__ == "__main__":
                         st.write(f"Estimated Tempo: {rounded_tempo} BPM")
                         st.write(f"Root Chroma: {root_chroma}")
                         st.write(f"Detected Key: {key}")
-                        rounded_articulation_rate = round(articulation_rate, 2)
-                        st.write(f"Articulation Rate: {rounded_articulation_rate}")
+                        st.write(f"Articulation Rate: {articulation_rate:.2f}")
 
                     else:
                         st.warning("Could not extract audio features.")
