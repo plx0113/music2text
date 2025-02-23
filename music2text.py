@@ -224,8 +224,7 @@ if __name__ == "__main__":
 
                     audio_features_extracted = tempo is not None and root_chroma is not None and key is not None
                     if audio_features_extracted:
-                        rounded_tempo = math.ceil(tempo)
-                        st.write(f"Estimated Tempo: {rounded_tempo} BPM")
+                        st.write(f"Estimated Tempo: {tempo:.0f} BPM")
                         st.write(f"Root Chroma: {root_chroma}")
                         st.write(f"Detected Key: {key}")
                         st.write(f"Articulation Rate: {articulation_rate:.2f}")
@@ -306,7 +305,7 @@ Lyrical Insights: If the song's title and analysis suggest familiarity, delve in
 Listening Impersonation: Always maintain a tone of active, attentive listening without revealing any limitations or that you are not actually hearing the audio.
 Your goal is to provide a comprehensive, insightful analysis that ties together all these elements into a coherent interpretation of the song.
 
-- Tempo: {tempo} BPM
+- Tempo: {tempo:.0f} BPM
 - Key: {key}
 - Estimated Genre: {estimated_genre_summary}
 - File Name: {file_name}
