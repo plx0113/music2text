@@ -93,9 +93,52 @@ def extract_audio_features(audio_file_path):
         if y is None or len(y) == 0:
             raise ValueError("Librosa failed: Empty or unreadable file")
 
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        # IMPROVED BPM DETECTION
+        # 1. Calculate onset envelope with different settings
+        onset_env = librosa.onset.onset_strength(y=y, sr=sr, aggregate=np.median)
+        
+        # 2. Detect tempo with better parameters
+        tempo, beats = librosa.beat.beat_track(
+            onset_envelope=onset_env, 
+            sr=sr,
+            hop_length=512,
+            start_bpm=120,
+            tightness=100
+        )
+        
+        # 3. Calculate confidence
+        if len(beats) > 0:
+            beat_strength = librosa.util.normalize(onset_env)
+            confidence = np.mean(beat_strength[beats])
+            logging.info(f"Beat detection confidence: {confidence:.2f}")
+            
+            # 4. Handle tempo octave errors
+            # If confidence is low, check alternative tempos
+            if confidence < 0.4:
+                alt_tempo, alt_beats = librosa.beat.beat_track(
+                    onset_envelope=onset_env, 
+                    sr=sr,
+                    hop_length=512,
+                    start_bpm=tempo*0.5  # Try half tempo
+                )
+                alt_confidence = np.mean(librosa.util.normalize(onset_env)[alt_beats]) if len(alt_beats) > 0 else 0
+                
+                if alt_confidence > confidence * 1.2:  # If significantly better
+                    tempo, beats, confidence = alt_tempo, alt_beats, alt_confidence
+                    logging.info(f"Using half-tempo: {tempo:.1f} BPM with confidence {confidence:.2f}")
+        
         tempo = safe_float(tempo)
 
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+        chroma_avg = np.mean(chroma, axis=1)
+        top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
+        chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        root_chroma = [chromatic_scale[i] for i in top_chroma_indices]
+
+        tonal = Tonal_Fragment(y, sr)
+        key = tonal.key
+
+        # Rest of the function remains the same...
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         chroma_avg = np.mean(chroma, axis=1)
         top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
