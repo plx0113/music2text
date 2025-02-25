@@ -1,3 +1,4 @@
+"venv/"
 "__pycache__/" 
 "music_genres_classification/model.safetensors" 
 "music_genres_classification/pytorch_model.bin" 
