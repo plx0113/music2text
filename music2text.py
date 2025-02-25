@@ -1865,7 +1865,7 @@ if __name__ == "__main__":
 You are a creative music analyst. Consider the following normalized genre scores (in JSON):
 {json.dumps(normalized_genres, indent=2)}
 
-Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
+Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track. Also think in an abstract manor about the core genre when making the new genre up.
 Funky Genre Database:
 {FUNKY_GENRES}
 
