@@ -129,25 +129,99 @@ def extract_audio_features(audio_file_path):
         
         tempo = safe_float(tempo)
 
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
-        chroma_avg = np.mean(chroma, axis=1)
-        top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
+        # IMPROVED KEY DETECTION
+        
         chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        root_chroma = [chromatic_scale[i] for i in top_chroma_indices]
 
+        # 1. Use multiple chroma variants for better pitch representation
+        chroma_cqt = librosa.feature.chroma_cqt(y=y, sr=sr, bins_per_octave=36)
+        chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr, n_chroma=12)
+        
+        # 2. Create more accurate harmonic-based chroma
+        y_harmonic, _ = librosa.effects.hpss(y)
+        chroma_harm = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr)
+        
+        # 3. Consensus-based key detection
+        keys = []
+        confidences = []
+        
+        # Original key detection
         tonal = Tonal_Fragment(y, sr)
-        key = tonal.key
+        key1 = tonal.key
+        keys.append(key1)
+        
+        # Add Krumhansl-Schmuckler key finding algorithm
+        chroma_avg = np.mean(chroma_stft, axis=1)
+        major_profiles = np.array([
+            [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88],  # C Major
+        ])
+        minor_profiles = np.array([
+            [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17],  # A Minor
+        ])
+        
+        # Rotate profiles to create all key templates
+        all_keys = []
+        for i in range(12):
+            all_keys.extend([
+                np.roll(major_profiles[0], i),
+                np.roll(minor_profiles[0], i)
+            ])
+        
+        key_names = []
+        for i in range(12):
+            key_names.append(f"{chromatic_scale[i]} Major")
+            key_names.append(f"{chromatic_scale[(i+9)%12]} Minor")
+        
+        # Calculate correlation with each key profile
+        correlations = []
+        for profile in all_keys:
+            corr = np.corrcoef(chroma_avg, profile)[0, 1]
+            correlations.append(corr)
+        
+        best_key_idx = np.argmax(correlations)
+        best_correlation = correlations[best_key_idx]
+        key2 = key_names[best_key_idx]
+        keys.append(key2)
+        confidences.append(best_correlation)
+        
+        # 4. Add segment-based key analysis
+        if len(y) > sr * 5:  # If more than 5 seconds
+            segment_length = sr * 5
+            num_segments = len(y) // segment_length
+            segment_keys = []
+            
+            # Analyze non-overlapping 5-second segments
+            for i in range(min(num_segments, 3)):  # Analyze up to 3 segments
+                segment = y[i * segment_length:(i + 1) * segment_length]
+                segment_chroma = librosa.feature.chroma_cqt(y=segment, sr=sr)
+                segment_chroma_avg = np.mean(segment_chroma, axis=1)
+                
+                # Calculate correlation with each key profile
+                segment_correlations = []
+                for profile in all_keys:
+                    corr = np.corrcoef(segment_chroma_avg, profile)[0, 1]
+                    segment_correlations.append(corr)
+                
+                best_segment_key_idx = np.argmax(segment_correlations)
+                segment_keys.append(key_names[best_segment_key_idx])
+            
+            # Add most common segment key
+            if segment_keys:
+                from collections import Counter
+                most_common_key = Counter(segment_keys).most_common(1)[0][0]
+                keys.append(most_common_key)
+        
+        # Final key determination by voting
+        if len(keys) > 0:
+            from collections import Counter
+            key_counter = Counter(keys)
+            key = key_counter.most_common(1)[0][0]
+            logging.info(f"Key detection candidates: {keys}")
+            logging.info(f"Final key selected: {key}")
+        else:
+            key = key1  # Fallback to original
 
         # Rest of the function remains the same...
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
-        chroma_avg = np.mean(chroma, axis=1)
-        top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
-        chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        root_chroma = [chromatic_scale[i] for i in top_chroma_indices]
-
-        tonal = Tonal_Fragment(y, sr)
-        key = tonal.key
-
         rms = librosa.feature.rms(y=y)[0]
         try:
             onset_env = librosa.onset.onset_strength(y=y, sr=sr)
@@ -160,12 +234,12 @@ def extract_audio_features(audio_file_path):
         spectral_bandwidth = np.mean(librosa.feature.spectral_bandwidth(y=y, sr=sr))
         y_harmonic, y_percussive = librosa.effects.hpss(y)
         mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=33)
-        return (tempo, root_chroma, key, rms, articulation_rate, 
+        return (tempo, key, rms, articulation_rate, 
                 spectral_centroid, spectral_bandwidth, y, sr, 
                 y_harmonic, y_percussive, mfccs)
     except Exception as e:
         logging.error(f"Feature extraction error: {e}")
-        return (None,)*12
+        return (None,)*11
 
 def convert_numpy_data(obj):
     """Converts numpy data types to serializable Python types."""
@@ -261,14 +335,13 @@ if __name__ == "__main__":
                     # 2. Extract audio features using a separate thread (CPU-bound)
                     with ThreadPoolExecutor(max_workers=1) as executor:
                         future = executor.submit(extract_audio_features, wav_file_path)
-                        (tempo, root_chroma, key, rms, articulation_rate, 
+                        (tempo, key, rms, articulation_rate, 
                          spectral_centroid, spectral_bandwidth, y, sr, 
                          y_harmonic, y_percussive, mfccs) = future.result()
 
-                    audio_features_extracted = tempo is not None and root_chroma is not None and key is not None
+                    audio_features_extracted = tempo is not None and key is not None
                     if audio_features_extracted:
                         st.write(f"Estimated Tempo: {tempo:.0f} BPM")
-                        st.write(f"Root Chroma: {root_chroma}")
                         st.write(f"Detected Key: {key}")
                         st.write(f"Articulation Rate: {articulation_rate:.2f}")
 
@@ -294,13 +367,13 @@ if __name__ == "__main__":
                     file_name = audio_file.name
 
                     # 5. Segment audio for arrangement analysis
-                    if y is not None and sr is not None:
-                        segments = segment_audio(y, sr)
-                        num_segments = len(segments)
-                    else:
-                        segments = []
-                        num_segments = 0
-                    st.write(f"Number of Segments: {num_segments}")
+                    #if y is not None and sr is not None:
+                        #segments = segment_audio(y, sr)
+                        #num_segments = len(segments)
+                    #else:
+                        #segments = []
+                        #num_segments = 0
+                   # st.write(f"Number of Segments: {num_segments}")
 
                     # 6. Calculate dynamics range (RMS)
                     if rms is not None:
@@ -326,7 +399,6 @@ if __name__ == "__main__":
                         "key": key,
                         "Estimated Genre": estimated_genre_summary,
                         "file_name": file_name,
-                        "num_segments": num_segments,
                         "articulation_rate": articulation_rate,
                         "dynamics_range": dynamics_range,
                         "spectral_centroid": spectral_centroid,
@@ -340,23 +412,16 @@ if __name__ == "__main__":
                             {
                                 "role": "system",
                                 "content": f"""
-You are an expert music analyst with a deep passion for music and an exceptional ability to interpret audio features as if you were truly listening. Using the provided data—including tempo, key, estimated genre probabilities, articulation rate, and segment information—deduce the song's genre, style, and emotional impact. Your analysis should consider the following:
-Tempo Interpretation: Recognize that the reported tempo might be doubled or halved. For example, if a song titled with an Allegretto indication shows a BPM of 224, you should infer the real tempo is closer to 112 BPM.
-Arrangement Analysis: Evaluate the musical structure and arrangement based on the number of segments, transitions, and other provided details.
-Genre Examination: Focus on the genre with the highest score while logically considering how the other genre probabilities influence the overall classification.
-Lyrical Insights: If the song's title and analysis suggest familiarity, delve into its lyrical meaning, themes, and wordplay. Highlight key phrases and explain how they contribute to the song's impact. Draw connections between the song and other tracks within the same genre.
-Listening Impersonation: Always maintain a tone of active, attentive listening without revealing any limitations or that you are not actually hearing the audio.
-Your goal is to provide a comprehensive, insightful analysis that ties together all these elements into a coherent interpretation of the song.
+You are a seasoned music analyst with exceptional listening skills. Using the provided data (tempo, key, genre probabilities, articulation rate, and segment info), deduce the song's genre, style, and emotional impact. Adjust for possible tempo doubling/halving, evaluate the song's structure and transitions, and focus on the dominant genre while noting subtle influences. If the title hints at deeper lyrics, discuss themes and key phrases. Provide a comprehensive, coherent interpretation of the song.
 
 - Tempo: {tempo:.0f} BPM
 - Key: {key}
 - Estimated Genre: {estimated_genre_summary}
 - File Name: {file_name}
-- Number of Segments: {num_segments}
-- Articulation Rate: {articulation_rate}
-- Dynamics Range: {dynamics_range}
-- Spectral Centroid: {spectral_centroid}
-- Spectral Bandwidth: {spectral_bandwidth}
+- Articulation Rate: {articulation_rate:.2f}
+- Dynamics Range: {dynamics_range:.2f}
+- Spectral Centroid: {spectral_centroid:.2f}
+- Spectral Bandwidth: {spectral_bandwidth:.2f}
 """
                             },
                             {
