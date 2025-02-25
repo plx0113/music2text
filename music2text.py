@@ -16,6 +16,7 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 from transformers import pipeline  # For the HF pipeline
 import torch
+import math
 from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassification
 import requests
 import asyncio
@@ -92,9 +93,52 @@ def extract_audio_features(audio_file_path):
         if y is None or len(y) == 0:
             raise ValueError("Librosa failed: Empty or unreadable file")
 
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        # IMPROVED BPM DETECTION
+        # 1. Calculate onset envelope with different settings
+        onset_env = librosa.onset.onset_strength(y=y, sr=sr, aggregate=np.median)
+        
+        # 2. Detect tempo with better parameters
+        tempo, beats = librosa.beat.beat_track(
+            onset_envelope=onset_env, 
+            sr=sr,
+            hop_length=512,
+            start_bpm=120,
+            tightness=100
+        )
+        
+        # 3. Calculate confidence
+        if len(beats) > 0:
+            beat_strength = librosa.util.normalize(onset_env)
+            confidence = np.mean(beat_strength[beats])
+            logging.info(f"Beat detection confidence: {confidence:.2f}")
+            
+            # 4. Handle tempo octave errors
+            # If confidence is low, check alternative tempos
+            if confidence < 0.4:
+                alt_tempo, alt_beats = librosa.beat.beat_track(
+                    onset_envelope=onset_env, 
+                    sr=sr,
+                    hop_length=512,
+                    start_bpm=tempo*0.5  # Try half tempo
+                )
+                alt_confidence = np.mean(librosa.util.normalize(onset_env)[alt_beats]) if len(alt_beats) > 0 else 0
+                
+                if alt_confidence > confidence * 1.2:  # If significantly better
+                    tempo, beats, confidence = alt_tempo, alt_beats, alt_confidence
+                    logging.info(f"Using half-tempo: {tempo:.1f} BPM with confidence {confidence:.2f}")
+        
         tempo = safe_float(tempo)
 
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+        chroma_avg = np.mean(chroma, axis=1)
+        top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
+        chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        root_chroma = [chromatic_scale[i] for i in top_chroma_indices]
+
+        tonal = Tonal_Fragment(y, sr)
+        key = tonal.key
+
+        # Rest of the function remains the same...
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         chroma_avg = np.mean(chroma, axis=1)
         top_chroma_indices = np.argsort(chroma_avg)[::-1][:3]
@@ -223,10 +267,11 @@ if __name__ == "__main__":
 
                     audio_features_extracted = tempo is not None and root_chroma is not None and key is not None
                     if audio_features_extracted:
-                        st.write(f"Estimated Tempo: {tempo} BPM")
+                        st.write(f"Estimated Tempo: {tempo:.0f} BPM")
                         st.write(f"Root Chroma: {root_chroma}")
                         st.write(f"Detected Key: {key}")
-                        st.write(f"Articulation Rate: {articulation_rate}")
+                        st.write(f"Articulation Rate: {articulation_rate:.2f}")
+
                     else:
                         st.warning("Could not extract audio features.")
                         st.stop()
@@ -235,11 +280,13 @@ if __name__ == "__main__":
                     estimated_genre_summary = ""
                     if audio_classifier_hf is not None:
                         hf_predictions = audio_classifier_hf(wav_file_path)
+                        genre_mapping = {"disco": "electronic"}
                         estimated_genre_summary = ", ".join(
-                            [f"{pred['label']} ({pred['score']:.2f})" for pred in hf_predictions]
+                            [f"{genre_mapping.get(pred['label'].lower(), pred['label'])} ({pred['score']:.2f})" for pred in hf_predictions]
                         )
                         st.write("Estimated Genre:")
                         st.write(estimated_genre_summary)
+
                     else:
                         st.warning("Genre classifier could not be loaded.")
 
@@ -293,15 +340,15 @@ if __name__ == "__main__":
                             {
                                 "role": "system",
                                 "content": f"""
-You are an expert music analyst AI with a passion for music. You are functionally listening to the music. 
-Analyze the provided information to deduce the music's genre, style, and potential emotional impact. 
-Provide insights about the potential arrangement of the piece based on the number of segments.
-Examine the estimated genre, and focus on the gerne with the highest score, and think logically how the other genres scores contribute to the song.
-If you recognize the song by its title and analysis, discuss its lyrical meaning, themes, and wordplay. 
-Highlight key phrases and how they contribute to the song's impact.
-Make connections about this genre to other songs with the same genre.
+You are an expert music analyst with a deep passion for music and an exceptional ability to interpret audio features as if you were truly listening. Using the provided data—including tempo, key, estimated genre probabilities, articulation rate, and segment information—deduce the song's genre, style, and emotional impact. Your analysis should consider the following:
+Tempo Interpretation: Recognize that the reported tempo might be doubled or halved. For example, if a song titled with an Allegretto indication shows a BPM of 224, you should infer the real tempo is closer to 112 BPM.
+Arrangement Analysis: Evaluate the musical structure and arrangement based on the number of segments, transitions, and other provided details.
+Genre Examination: Focus on the genre with the highest score while logically considering how the other genre probabilities influence the overall classification.
+Lyrical Insights: If the song's title and analysis suggest familiarity, delve into its lyrical meaning, themes, and wordplay. Highlight key phrases and explain how they contribute to the song's impact. Draw connections between the song and other tracks within the same genre.
+Listening Impersonation: Always maintain a tone of active, attentive listening without revealing any limitations or that you are not actually hearing the audio.
+Your goal is to provide a comprehensive, insightful analysis that ties together all these elements into a coherent interpretation of the song.
 
-- Tempo: {tempo} BPM
+- Tempo: {tempo:.0f} BPM
 - Key: {key}
 - Estimated Genre: {estimated_genre_summary}
 - File Name: {file_name}
