@@ -156,6 +156,14 @@ def extract_audio_features(audio_file_path):
                             logging.info(f"Using half-tempo: {tempo:.1f} BPM with confidence {confidence:.2f}")
             
             tempo = float(tempo)  # Ensure tempo is a float
+            # Adjust BPM if it is out of the desired range
+            if tempo < 70:
+                tempo = tempo * 2
+                logging.info(f"Detected BPM below 70, doubling BPM to: {tempo:.1f}")
+            elif tempo > 180:
+                tempo = tempo / 2
+                logging.info(f"Detected BPM above 180, halving BPM to: {tempo:.1f}")
+    
         except Exception as e:
             logging.error(f"Error in tempo detection: {str(e)}")
             tempo = 120.0  # fallback tempo
@@ -320,17 +328,15 @@ if __name__ == "__main__":
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
                         file_name = audio_file.name
                         prompt_for_micro_genre = f"""
-You are a creative music analyst. Consider the following normalized genre scores (in JSON):
+1. You are a genius music analyst. Consider the following normalized genre scores (in JSON):
 {json.dumps(normalized_genres, indent=2)}
-
-Also, consider the track's filename: "{file_name}" if you recognize the song allow it to influence your final micro genre.
-
-Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
-Be creative—feel free to combine words into a single cool-sounding term.
-Funky Genre Database (one per line):
+2. Also, consider the track's filename: "{file_name}" if you recognize the song name allow it to influence your final micro genre, consdering if you know the song you know the genre.
+3. If you don't recognize the file name, look for clues in the file name that might suggest a genre or style.
+4. Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
+5. Be creative—feel free to combine words into a single cool-sounding term, but try to use real world micro genres.
+6. Funky Genre Database (one per line):
 {funky_genres_str}
-
-Output only the final micro-genre as a concise string.
+7. Output only the final micro-genre as a concise string.
 """
 
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
@@ -366,10 +372,14 @@ Output only the final micro-genre as a concise string.
                         audio_analysis = {"features": convert_numpy_data(feature_summary)}
     
                         prompt_for_analysis = f"""
-You are a seasoned music analyst with exceptional listening skills. Explicitly state the genre "{final_micro_genre}" before anything else.
-Using the provided data (tempo, key, and other audio features) and knowing that the track's final micro-genre is "{final_micro_genre}", deduce the song's genre, style, and emotional impact.
-Adjust for possible tempo doubling/halving, evaluate the song's structure and transitions, and focus on the dominant genre while noting subtle influences.
-Provide a comprehensive, coherent interpretation of the song.
+1. Explicitly state the genre "{final_micro_genre}" before anything else.
+2. You are a genius music analyst with exceptional listening skills. 
+3. Using the provided data (tempo, key, and other audio features) and knowing that the track's final micro-genre is "{final_micro_genre}", deduce the song's genre, style, and emotional impact.
+4. If you know the song based on it's title, consider its title and artist, while also considering the lyrics of the song, talk about word play or meaning behind the lyrics. 
+5. If you don't know the song, don't mention the artist or lyrics of the song, don't say you don't know just skip that part for those particular songs.
+6. Adjust for possible tempo doubling/halving, evaluate the song's structure and transitions, and focus on the dominant genre while noting subtle influences.
+7. Provide a comprehensive, coherent interpretation of the song.
+8. Keep the tone positive and engaging, and aim for a total length no longer than 3 paragraphs in addition to the initial genre statement.
     
 - Tempo: {tempo:.0f} BPM
 - Key: {key}
