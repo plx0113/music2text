@@ -318,9 +318,12 @@ if __name__ == "__main__":
                         progress_bar.progress(60)
     
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
+                        file_name = audio_file.name
                         prompt_for_micro_genre = f"""
 You are a creative music analyst. Consider the following normalized genre scores (in JSON):
 {json.dumps(normalized_genres, indent=2)}
+
+Also, consider the track's filename: "{file_name}"
 
 Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
 Be creative—feel free to combine words into a single cool-sounding term.
@@ -329,6 +332,7 @@ Funky Genre Database (one per line):
 
 Output only the final micro-genre as a concise string.
 """
+
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
                         progress_bar.progress(80)
