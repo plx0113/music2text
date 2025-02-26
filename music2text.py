@@ -331,12 +331,14 @@ if __name__ == "__main__":
 1. You are a genius music analyst. Consider the following normalized genre scores (in JSON):
 {json.dumps(normalized_genres, indent=2)}
 2. Also, consider the track's filename: "{file_name}" if you recognize the song name allow it to influence your final micro genre, consdering if you know the song you know the genre.
-3. If you don't recognize the file name, look for clues in the file name that might suggest a genre or style.
+3. If you don't recognize the song by file name, look for clues in the file name that might suggest a genre or style.
 4. Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
-5. Be creative—feel free to combine words into a single cool-sounding term, but try to use real world micro genres.
-6. Funky Genre Database (one per line):
+5. When examining the funky genre database, be sure to consider the genre scores, and be mindful that each sub genre is listed with a parent genre before it. 
+6. The parent genre should have some relation to the track's genre scores, but you are ultimately pulling from the sub genre string.
+7. Be creative—feel free to combine words into a single cool-sounding term, but try to use real world micro genres.
+8. Funky Genre Database (one per line):
 {funky_genres_str}
-7. Output only the final micro-genre as a concise string.
+9. Output only the final micro-genre as a concise string.
 """
 
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
