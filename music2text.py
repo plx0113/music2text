@@ -108,13 +108,19 @@ def convert_to_wav(audio_file, temp_dir, sr=44100, max_duration=30):
         with open(input_file_path, "wb") as f:
             f.write(audio_file.read())
         audio = AudioSegment.from_file(input_file_path, format=file_extension)
-        truncated_audio = audio[:max_duration * 1000]
+        
+        # Clip the segment from 30 seconds to 60 seconds (pydub uses millisecond indexing)
+        start_ms = 30 * 1000
+        end_ms = start_ms + (max_duration * 1000)
+        truncated_audio = audio[start_ms:end_ms]
+        
         wav_file_path = os.path.join(temp_dir, "output.wav")
         truncated_audio.export(wav_file_path, format="wav", parameters=["-ar", str(sr)])
         return wav_file_path
     except Exception as e:
         logging.error(f"Conversion to WAV error: {e}")
         return None
+
 
 def extract_audio_features(audio_file_path):
     try:
