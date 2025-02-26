@@ -323,7 +323,7 @@ if __name__ == "__main__":
 You are a creative music analyst. Consider the following normalized genre scores (in JSON):
 {json.dumps(normalized_genres, indent=2)}
 
-Also, consider the track's filename: "{file_name}"
+Also, consider the track's filename: "{file_name}" if you recognize the song allow it to influence your final micro genre.
 
 Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
 Be creative—feel free to combine words into a single cool-sounding term.
