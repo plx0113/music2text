@@ -333,7 +333,14 @@ if __name__ == "__main__":
                         normalized_genres = compute_normalized_top_genres(genre_scores, top_n=4)
                         normalized_genres = convert_numpy_data(normalized_genres)  # Ensure pure Python types
                         progress_bar.progress(60)
-    
+
+                        # Use the filename to decide whether to remap reggae to rnb.
+                        file_name = audio_file.name.lower()
+                        if "reggae" in normalized_genres:
+                            if "reggae" not in file_name and normalized_genres["reggae"] < 0.5:
+                            # Remap reggae score to rnb
+                            normalized_genres["rnb"] = normalized_genres.pop("reggae")
+
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
                         file_name = audio_file.name
                         prompt_for_micro_genre = f"""
