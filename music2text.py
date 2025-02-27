@@ -321,7 +321,7 @@ if __name__ == "__main__":
                     # --- Step 3: Genre Classification ---
                     if audio_classifier_hf is not None:
                         hf_predictions = audio_classifier_hf(wav_file_path)
-                        genre_mapping = {"disco": "electronic", "reggae": "rnb"}
+                        genre_mapping = {"disco": "electronic"}
                         genre_scores = {}
                         for pred in hf_predictions:
                             label = pred['label'].lower()
@@ -334,17 +334,19 @@ if __name__ == "__main__":
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
                         file_name = audio_file.name
                         prompt_for_micro_genre = f"""
-1. You are a genius music analyst. Consider the following normalized genre scores (in JSON):
+1. You are a genius music genre expert. Your task is to create a final micro-genre for a song.Consider the following normalized genre scores (in JSON):
 {json.dumps(normalized_genres, indent=2)}
 2. Also, consider the track's filename: "{file_name}" if you recognize the song name allow it to influence your final micro genre, consdering if you know the song you know the genre.
-3. If you don't recognize the song by file name, look for clues in the file name that might suggest a genre or style.
-4. Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
-5. When examining the funky genre database, be sure to consider the genre scores, and be mindful that each sub genre is listed with a parent genre before it. 
-6. The parent genre should have some relation to the track's genre scores, but you are ultimately pulling from the sub genre string.
-7. Be creative—feel free to combine words into a single cool-sounding term, but try to use real world micro genres.
-8. Funky Genre Database (one per line):
+3. Consider the "{tempo:.0f}" BPM tempo and "{key}" of each track, remember a tempo may be doubled or halved to fit the genre.
+4. If you don't recognize the song by file name, look for clues in the file name that might suggest a genre or style.
+5. Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
+6. When examining the funky genre database, be sure to consider the genre scores, and be mindful that each sub genre has a parent genre before it (the parent genres relate the genres from the genre scores). 
+7. The parent genre should have some relation to the track's genre scores, but you are ultimately pulling from the sub genre string.
+8. If you can't find a match in the funky genre database, feel free to create a new micro-genre based on the track's features.
+9. Use your best judgment, and most importantly, have a reason for choosing the final micro genre.
+9. Funky Genre Database:
 {funky_genres_str}
-9. Output only the final micro-genre as a concise string.
+11. Output only the final micro-genre as a concise string.
 """
 
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
