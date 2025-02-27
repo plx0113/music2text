@@ -94,8 +94,11 @@ def determine_micro_genre(probabilities):
 # --- Load Funky Genres from JSON file ---
 try:
     with open("funky_genres.json", "r", encoding="utf-8", errors="replace") as f:
-        funky_genres_list = json.load(f)
-    funky_genres_str = "\n".join(funky_genres_list)
+        funky_genres = json.load(f)
+    # Format the structured data into a readable string for the prompt
+    funky_genres_str = ""
+    for parent, subgenres in funky_genres.items():
+        funky_genres_str += f"{parent}:\n" + "\n".join(subgenres) + "\n\n"
 except Exception as e:
     logging.error("Error loading funky_genres.json: " + str(e))
     funky_genres_str = "Astro Acid Breaks\nCosmic 8-Bit Garage\nNebula Nu Metal"  # fallback
@@ -334,13 +337,14 @@ if __name__ == "__main__":
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
                         file_name = audio_file.name
                         prompt_for_micro_genre = f"""
-You are a music genre expert. Given these inputs:
-- Normalized genre scores (JSON): {genre_scores}
-- BPM: {tempo} (note: BPM may be doubled or halved if needed)
-- Track filename: "{file_name}"
-- Funky Genre Database: {funky_genres_list}
+You are a music genre expert with deep musical knowledge across mainstream and micro-genres. Given these inputs:
 
-Based solely on these details, generate an original, highly accurate micro-genre for the track. Output only the final micro-genre as a concise string.
+    Normalized Genre Scores (JSON): {genre_scores}
+    BPM: {tempo} (BPM values may be doubled or halved as needed)
+    Track Filename: "{file_name}" (use any recognizable cues from the filename)
+    Funky Genre Database: {funky_genres_list}
+
+Using your comprehensive expertise and by analyzing this data, generate a new, creative, and highly accurate micro-genre for this track. Feel free to mix words and invent novel combinations that reflect the track’s musical characteristics. Output only the final micro-genre as a concise string.
 """
 
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
