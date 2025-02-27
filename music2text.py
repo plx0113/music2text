@@ -342,7 +342,7 @@ You are a music genre expert with deep musical knowledge across mainstream and m
     Normalized Genre Scores (JSON): {genre_scores}
     BPM: {tempo} (BPM values may be doubled or halved as needed)
     Track Filename: "{file_name}" (use any recognizable cues from the filename)
-    Funky Genre Database: {funky_genres_list}
+    Funky Genre Database: {funky_genres_str}
 
 Using your comprehensive expertise and by analyzing this data, generate a new, creative, and highly accurate micro-genre for this track. Feel free to mix words and invent novel combinations that reflect the track’s musical characteristics. Output only the final micro-genre as a concise string.
 """
