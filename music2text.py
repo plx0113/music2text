@@ -349,7 +349,7 @@ if __name__ == "__main__":
                         prompt_for_micro_genre = f"""
 You are a music genre expert with deep musical knowledge across mainstream and micro-genres. Given these inputs:
 
-    Normalized Genre Scores (JSON): {genre_scores}
+    Normalized Genre Scores (JSON): {normalized_genres}
     BPM: {tempo} (BPM values may be doubled or halved as needed)
     Track Filename: "{file_name}" (use any recognizable cues from the filename)
     Funky Genre Database: {funky_genres_str}
