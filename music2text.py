@@ -337,7 +337,7 @@ if __name__ == "__main__":
                         # Use the filename to decide whether to remap reggae to rnb.
                         file_name = audio_file.name.lower()
                         if "reggae" in normalized_genres:
-                            if ("reggae" not in file_name and "dub" not in file_name) and normalized_genres["reggae"] > 0.5:
+                            if ("reggae" not in file_name and "dub" not in file_name) and normalized_genres["reggae"] < 0.5:
                             # Remap reggae score to rnb
                                 normalized_genres["rnb"] = normalized_genres.pop("reggae")
                         
