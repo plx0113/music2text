@@ -334,19 +334,13 @@ if __name__ == "__main__":
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
                         file_name = audio_file.name
                         prompt_for_micro_genre = f"""
-1. You are a genius music genre expert. Your task is to create a final micro-genre for a song.Consider the following normalized genre scores (in JSON):
-{json.dumps(normalized_genres, indent=2)}
-2. Also, consider the track's filename: "{file_name}" if you recognize the song name allow it to influence your final micro genre, consdering if you know the song you know the genre.
-3. Consider the "{tempo:.0f}" BPM tempo and "{key}" of each track, remember a tempo may be doubled or halved to fit the genre.
-4. If you don't recognize the song by file name, look for clues in the file name that might suggest a genre or style.
-5. Using only these values and the following funky genre database, generate a new, original final micro-genre name for the track.
-6. When examining the funky genre database, be sure to consider the genre scores, and be mindful that each sub genre has a parent genre before it (the parent genres relate the genres from the genre scores). 
-7. The parent genre should have some relation to the track's genre scores, but you are ultimately pulling from the sub genre string.
-8. If you can't find a match in the funky genre database, feel free to create a new micro-genre based on the track's features.
-9. Use your best judgment, and most importantly, have a reason for choosing the final micro genre.
-9. Funky Genre Database:
-{funky_genres_str}
-11. Output only the final micro-genre as a concise string.
+You are a music genre expert. Given these inputs:
+- Normalized genre scores (JSON): {genre_scores}
+- BPM: {tempo} (note: BPM may be doubled or halved if needed)
+- Track filename: "{file_name}"
+- Funky Genre Database: {funky_genres_list}
+
+Based solely on these details, generate an original, highly accurate micro-genre for the track. Output only the final micro-genre as a concise string.
 """
 
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
