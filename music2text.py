@@ -354,6 +354,19 @@ You are a music genre expert with deep musical knowledge across mainstream and m
     Track Filename: "{file_name}" (use any recognizable cues from the filename)
     Funky Genre Database: {funky_genres_str}
 
+Here are typical BPM ranges for various genres:
+    Dub: 70–90 BPM
+    Hip-hop: 85–110 BPM
+    House: 115–130 BPM
+    Techno/Trance: 120–140 BPM
+    Dubstep: 135–145 BPM
+    Drum and Bass: 160–180 BPM
+    Hardstyle: 140–160 BPM
+    Pop: 100–130 BPM
+    R&B: 60–80 BPM
+    Rock: 110–140 BPM
+    Metal: 100–160 BPM
+
 Using your comprehensive expertise and by analyzing this data, generate a new, creative, and highly accurate micro-genre for this track. Feel free to mix words and invent novel combinations that reflect the track’s musical characteristics. Output only the final micro-genre as a concise string.
 """
 
