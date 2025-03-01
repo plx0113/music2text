@@ -360,7 +360,7 @@ You are a music genre expert with deep musical knowledge across mainstream and m
     Track Title: "{track_title}" (use any recognizable cues from the title, if you recognize the song use it's genre)
     Funky Genre Database: {funky_genres_str}
 
-Please generate the final micro-genre for this track. Feel free to get creative combining words and genres but keep it rooted in the macro-genres and Funky Genre Database. Output only the final micro-genre as a concise string.
+Please generate the final micro-genre for this track. Feel free to get whacky and creative combining words and genres but keep it rooted in the macro-genres and Funky Genre Database. Output only the final micro-genre as a concise string.
 """
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
@@ -406,8 +406,9 @@ Data:
 Instructions:
 1. Begin by explicitly stating the genre "{final_micro_genre}".
 2. Pretend you are a music critic for Pitchfork magazine, but never mention Pitchfork.
-3. Write a single, concise, and evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
-4. Do not mention technical details such as BPM or key.
+3. If you recognize the song, talk about it's lyrical content, if you don't recognize the song, talk about the instrumentation.
+4. Write a single, concise, and evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
+5. Do not mention technical details such as BPM or key.
 """
 
                         response_analysis = call_openai_with_retry([
