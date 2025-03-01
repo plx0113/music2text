@@ -359,7 +359,7 @@ You are a music genre expert with deep musical knowledge across mainstream and m
 
     Normalized Genre Scores (JSON): {normalized_genres}
     BPM: {tempo} (BPM values may be doubled or halved as needed)
-    Track Filename: "{file_name}" (use any recognizable cues from the filename)
+    Track Filename: "{file_name}" (use any recognizable cues from the filename, if you know the song and the songs genre, use it)
     Funky Genre Database: {funky_genres_str}
 
 Here are typical BPM ranges for various genres:
@@ -411,15 +411,7 @@ Using your comprehensive expertise and by analyzing this data, generate a new, c
                         audio_analysis = {"features": convert_numpy_data(feature_summary)}
     
                         prompt_for_analysis = f"""
-1. Explicitly state the genre "{final_micro_genre}" before anything else.
-2. You are a genius music analyst with exceptional listening skills. 
-3. Using the provided data (tempo, key, and other audio features) and knowing that the track's final micro-genre is "{final_micro_genre}", deduce the song's genre, style, and emotional impact.
-4. If you know the song based on it's title, consider its title and artist, while also considering the lyrics of the song, talk about word play or meaning behind the lyrics. 
-5. If you don't know the song, don't mention the artist or lyrics of the song, don't say you don't know just skip that part for those particular songs.
-6. Adjust for possible tempo doubling/halving, evaluate the song's structure and transitions, and focus on the dominant genre while noting subtle influences.
-7. Provide a comprehensive, coherent interpretation of the song.
-8. Keep the tone positive and engaging, and aim for a total length no longer than 3 paragraphs in addition to the initial genre statement.
-    
+Data:
 - Tempo: {tempo:.0f} BPM
 - Key: {key}
 - Final Micro-Genre: {final_micro_genre}
@@ -428,7 +420,15 @@ Using your comprehensive expertise and by analyzing this data, generate a new, c
 - Dynamics Range: {dynamics_range:.2f}
 - Spectral Centroid: {spectral_centroid:.2f}
 - Spectral Bandwidth: {spectral_bandwidth:.2f}
+
+Instructions:
+1. Begin by explicitly stating the genre "{final_micro_genre}".
+2. As an expert music analyst, deduce the song's genre, style, and emotional impact from the data above.
+3. If the title suggests familiarity, include insights on the title, artist, and lyrical word play; otherwise, omit these details.
+4. Adjust for tempo doubling/halving and note both dominant and subtle influences.
+5. Provide a comprehensive, engaging analysis in no more than 3 paragraphs (excluding the initial genre statement).
 """
+
                         response_analysis = call_openai_with_retry([
                             {"role": "system", "content": prompt_for_analysis},
                             {"role": "user", "content": json.dumps(audio_analysis)}
