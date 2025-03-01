@@ -397,6 +397,8 @@ Please generate the final micro-genre for this track. Feel free to get whacky an
                         }
                         audio_analysis = {"features": convert_numpy_data(feature_summary)}
     
+                        audio_analysis = {"features": convert_numpy_data(feature_summary)}
+
                         if lyrics_input.strip():
                             prompt_for_analysis = f"""
 Data:
@@ -417,8 +419,8 @@ Instructions:
 4. Write two, concise, evocative paragraphs reviewing the track, combining insights from both the music and the lyrics.
 5. Do not mention technical details such as BPM or key.
 """
-else:
-    prompt_for_analysis = f"""
+                        else:
+                            prompt_for_analysis = f"""
 Data:
 - Final Micro-Genre: {final_micro_genre}
 - File Name: {track_title}
@@ -433,6 +435,7 @@ Instructions:
 3. Write a single, concise, evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
 4. Do not mention technical details such as BPM or key.
 """
+
 
                         response_analysis = call_openai_with_retry([
                             {"role": "system", "content": prompt_for_analysis},
