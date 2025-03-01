@@ -93,18 +93,6 @@ def determine_micro_genre(probabilities):
 # End Custom Micro-Genre Generation Functions
 # ==========================================================
 
-# --- Load Funky Genres from JSON file ---
-try:
-    with open("funky_genres.json", "r", encoding="utf-8", errors="replace") as f:
-        funky_genres = json.load(f)
-    # Format the structured data into a readable string for the prompt
-    funky_genres_str = ""
-    for parent, subgenres in funky_genres.items():
-        funky_genres_str += f"{parent}:\n" + "\n".join(subgenres) + "\n\n"
-except Exception as e:
-    logging.error("Error loading funky_genres.json: " + str(e))
-    funky_genres_str = "Astro Acid Breaks\nCosmic 8-Bit Garage\nNebula Nu Metal"  # fallback
-
 # Truncate the audio before conversion
 def convert_to_wav(audio_file, temp_dir, sr=44100, max_duration=30):
     try:
@@ -359,11 +347,17 @@ if __name__ == "__main__":
 You are a music genre expert with deep musical knowledge across mainstream and micro-genres. Given these inputs:
 
     Normalized Genre Scores (JSON): {normalized_genres}
-    BPM: {tempo} (BPM values may be doubled or halved as needed)
-    Track Title: "{track_title}" (use any recognizable cues from the title, if you recognize the song use it's genre)
-    Funky Genre Database: {funky_genres_str}
+    BPM: {tempo} 
+    Track Title: "{track_title}" 
+    Creative Constraints:
+        Prioritize the highest-scoring genre(s) as the foundation.
+        Blend secondary genres to add subtle influences.
+        Consider BPM and typical tempos of similar styles.
+        If the track title suggests a known song or vibe, incorporate relevant stylistic cues.
+        Generate a short, punchy, and natural-sounding micro-genre name.
+        Be inventive, but keep it rooted in real-world musical trends.
 
-Please generate the final micro-genre for this track. Feel free to get whacky and creative combining words and genres but keep it rooted in the macro-genres and Funky Genre Database. Output only the final micro-genre as a concise string.
+Output ONLY the final micro-genre name as a concise string. Do not provide explanations.
 """
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
