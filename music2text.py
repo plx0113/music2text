@@ -302,7 +302,7 @@ if __name__ == "__main__":
     
     if audio_file is not None:
     # Extract just the song name without extension
-    track_title = os.path.splitext(audio_file.name)[0]
+        track_title = os.path.splitext(audio_file.name)[0]
         with st.spinner("Processing audio..."):
             status_text = st.empty()
             try:
