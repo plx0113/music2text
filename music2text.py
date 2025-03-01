@@ -73,7 +73,7 @@ custom_genre_rules = [
 ]
 
 def compute_normalized_top_genres(probabilities, top_n=4):
-    
+
     # Otherwise, process the top N genres as before
     sorted_genres = sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
     top_genres = dict(sorted_genres[:top_n])
@@ -360,20 +360,7 @@ You are a music genre expert with deep musical knowledge across mainstream and m
     Track Title: "{track_title}" (use any recognizable cues from the title, if you recognize the song use it's genre)
     Funky Genre Database: {funky_genres_str}
 
-Typical BPM ranges for various genres:
-    Dub: 70–90 BPM
-    Hip-hop: 85–110 BPM
-    House: 115–130 BPM
-    Techno/Trance: 120–140 BPM
-    Dubstep: 135–145 BPM
-    Drum and Bass: 160–180 BPM
-    Hardstyle: 140–160 BPM
-    Pop: 100–130 BPM
-    R&B: 60–80 BPM
-    Rock: 110–140 BPM
-    Metal: 100–160 BPM
-
-Genererate ahighly accurate micro-genre for this track. Feel free to get creative by combining sub genres within the dominant macro-genre, but please choose logically based on the above inputs. Output only the final micro-genre as a concise string.
+Please generate the final micro-genre for this track. Feel free to get creative combining words and genres but keep it rooted in the macro-genres and Funky Genre Database. Output only the final micro-genre as a concise string.
 """
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
