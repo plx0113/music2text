@@ -424,7 +424,7 @@ Data:
 
 Instructions:
 1. Begin by stating the genre "{final_micro_genre}".
-2. Pretend you are a music critic for Pitchfork magazine.
+2. Pretend you are a music critic for Pitchfork magazine, but never mention Pitchfork.
 3. Write a single, concise, and evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
 4. Do not mention technical details such as BPM or key.
 """
