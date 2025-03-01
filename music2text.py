@@ -293,6 +293,9 @@ if __name__ == "__main__":
     progress_bar = st.progress(0)
     
     audio_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "flac", "m4a", "ogg"])
+
+    # Optional: Lyrics input
+    lyrics_input = st.text_area("Optional: Paste song lyrics here for analysis", "")
     
     if audio_file is not None:
     # Extract just the song name without extension
@@ -394,7 +397,28 @@ Please generate the final micro-genre for this track. Feel free to get whacky an
                         }
                         audio_analysis = {"features": convert_numpy_data(feature_summary)}
     
+                        if lyrics_input.strip():
                         prompt_for_analysis = f"""
+Data:
+- Final Micro-Genre: {final_micro_genre}
+- File Name: {track_title}
+- Articulation Rate: {articulation_rate:.2f}
+- Dynamics Range: {dynamics_range:.2f}
+- Spectral Centroid: {spectral_centroid:.2f}
+- Spectral Bandwidth: {spectral_bandwidth:.2f}
+
+Lyrics:
+{lyrics_input}
+
+Instructions:
+1. Begin by explicitly stating the genre "{final_micro_genre}".
+2. Pretend you are a music critic for Pitchfork magazine, but do not mention Pitchfork.
+3. Analyze the provided lyrics—discuss wordplay, meaning, rhyme scheme, and how they complement the track's musical style.
+4. Write two, concise, evocative paragraphs reviewing the track, combining insights from both the music and the lyrics.
+5. Do not mention technical details such as BPM or key.
+"""
+else:
+    prompt_for_analysis = f"""
 Data:
 - Final Micro-Genre: {final_micro_genre}
 - File Name: {track_title}
@@ -405,10 +429,9 @@ Data:
 
 Instructions:
 1. Begin by explicitly stating the genre "{final_micro_genre}".
-2. Pretend you are a music critic for Pitchfork magazine, but never mention Pitchfork.
-3. If you recognize the song, talk about it's lyrical content, if you don't recognize the song, talk about the instrumentation.
-4. Write a single, concise, and evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
-5. Do not mention technical details such as BPM or key.
+2. Pretend you are a music critic for Pitchfork magazine, but do not mention Pitchfork.
+3. Write a single, concise, evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
+4. Do not mention technical details such as BPM or key.
 """
 
                         response_analysis = call_openai_with_retry([
