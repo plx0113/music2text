@@ -398,7 +398,7 @@ Please generate the final micro-genre for this track. Feel free to get whacky an
                         audio_analysis = {"features": convert_numpy_data(feature_summary)}
     
                         if lyrics_input.strip():
-                        prompt_for_analysis = f"""
+                            prompt_for_analysis = f"""
 Data:
 - Final Micro-Genre: {final_micro_genre}
 - File Name: {track_title}
