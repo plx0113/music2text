@@ -412,8 +412,6 @@ Using your comprehensive expertise and by analyzing this data, generate a new, c
     
                         prompt_for_analysis = f"""
 Data:
-- Tempo: {tempo:.0f} BPM
-- Key: {key}
 - Final Micro-Genre: {final_micro_genre}
 - File Name: {file_name}
 - Articulation Rate: {articulation_rate:.2f}
@@ -422,11 +420,10 @@ Data:
 - Spectral Bandwidth: {spectral_bandwidth:.2f}
 
 Instructions:
-1. Begin by explicitly stating the genre "{final_micro_genre}".
-2. As an expert music analyst, deduce the song's genre, style, and emotional impact from the data above.
-3. If the title suggests familiarity, include insights on the title, artist, and lyrical word play; otherwise, omit these details.
-4. Adjust for tempo doubling/halving and note both dominant and subtle influences.
-5. Provide a comprehensive, engaging analysis in no more than 3 paragraphs (excluding the initial genre statement).
+1. Begin by stating the genre "{final_micro_genre}".
+2. Pretend you are a music critic for Pitchfork magazine.
+3. Write a single, concise, and evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
+4. Do not mention technical details such as BPM or key.
 """
 
                         response_analysis = call_openai_with_retry([
