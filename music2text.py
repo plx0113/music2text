@@ -76,7 +76,7 @@ def compute_normalized_top_genres(probabilities, top_n=4):
     # Check if any genre has a probability over 0.95
     if probabilities:
         max_genre, max_score = max(probabilities.items(), key=lambda item: item[1])
-        if max_score > 0.95:
+        if max_score > 0.94:
             # Return only the genre with the dominant score
             return {max_genre: 1.0}
     
