@@ -301,6 +301,8 @@ if __name__ == "__main__":
     audio_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "flac", "m4a", "ogg"])
     
     if audio_file is not None:
+    # Extract just the song name without extension
+    track_title = os.path.splitext(audio_file.name)[0]
         with st.spinner("Processing audio..."):
             status_text = st.empty()
             try:
@@ -342,10 +344,13 @@ if __name__ == "__main__":
                         normalized_genres = convert_numpy_data(normalized_genres)  # Ensure pure Python types
                         progress_bar.progress(60)
 
-                        # Use the filename to decide whether to remap reggae to rnb.
-                        file_name = audio_file.name.lower()
+                        # Extract track title without file extension and in lowercase for comparisons
+                        track_title = os.path.splitext(audio_file.name)[0]
+                        track_title_lower = track_title.lower()
+
+                        # Use the track title to decide whether to remap reggae to rnb.
                         if "reggae" in normalized_genres:
-                            if ("reggae" not in file_name and "dub" not in file_name) and normalized_genres["reggae"] < 0.925:
+                            if ("reggae" not in track_title_lower and "dub" not in track_title_lower) and normalized_genres["reggae"] < 0.925:
                             # Remap reggae score to rnb
                                 normalized_genres["rnb"] = normalized_genres.pop("reggae")
                         
@@ -353,13 +358,12 @@ if __name__ == "__main__":
                         st.write("Normalized Macro Genre Scores:", normalized_genres)        
 
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
-                        file_name = audio_file.name
                         prompt_for_micro_genre = f"""
 You are a music genre expert with deep musical knowledge across mainstream and micro-genres. Given these inputs:
 
     Normalized Genre Scores (JSON): {normalized_genres}
     BPM: {tempo} (BPM values may be doubled or halved as needed)
-    Track Filename: "{file_name}" (use any recognizable cues from the filename, if you know the song and the songs genre, use it)
+    Track Title: "{track_title}" (use any recognizable cues from the title, if you recognize the song use it's genre)
     Funky Genre Database: {funky_genres_str}
 
 Here are typical BPM ranges for various genres:
@@ -375,16 +379,15 @@ Here are typical BPM ranges for various genres:
     Rock: 110–140 BPM
     Metal: 100–160 BPM
 
-Using your comprehensive expertise and by analyzing this data, generate a new, creative, and highly accurate micro-genre for this track. Feel free to mix words and invent novel combinations that reflect the track’s musical characteristics. Output only the final micro-genre as a concise string.
+Using your comprehensive expertise, generate a creative and highly accurate micro-genre for this track. Output only the final micro-genre as a concise string.
 """
-
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
                         progress_bar.progress(80)
                         # --- End Feedback Loop ---
     
                         # --- Step 4: Prepare and Display Analysis ---
-                        file_name = audio_file.name
+                        track_title = os.path.splitext(audio_file.name)[0]
                         dynamics_range = float(np.max(rms) - np.min(rms)) if rms is not None else None
     
                         if y is not None and sr is not None:
@@ -402,7 +405,7 @@ Using your comprehensive expertise and by analyzing this data, generate a new, c
                             "tempo": tempo,
                             "key": key,
                             "Final Micro-Genre": final_micro_genre,
-                            "file_name": file_name,
+                            "track_title": track_title,
                             "articulation_rate": articulation_rate,
                             "dynamics_range": dynamics_range,
                             "spectral_centroid": spectral_centroid,
@@ -413,7 +416,7 @@ Using your comprehensive expertise and by analyzing this data, generate a new, c
                         prompt_for_analysis = f"""
 Data:
 - Final Micro-Genre: {final_micro_genre}
-- File Name: {file_name}
+- File Name: {track_title}
 - Articulation Rate: {articulation_rate:.2f}
 - Dynamics Range: {dynamics_range:.2f}
 - Spectral Centroid: {spectral_centroid:.2f}
