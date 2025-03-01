@@ -366,7 +366,7 @@ You are a music genre expert with deep musical knowledge across mainstream and m
     Track Title: "{track_title}" (use any recognizable cues from the title, if you recognize the song use it's genre)
     Funky Genre Database: {funky_genres_str}
 
-Here are typical BPM ranges for various genres:
+Typical BPM ranges for various genres:
     Dub: 70–90 BPM
     Hip-hop: 85–110 BPM
     House: 115–130 BPM
@@ -379,7 +379,7 @@ Here are typical BPM ranges for various genres:
     Rock: 110–140 BPM
     Metal: 100–160 BPM
 
-Using your comprehensive expertise and creativity gererate ahighly accurate micro-genre for this track. Output only the final micro-genre as a concise string.
+Genererate ahighly accurate micro-genre for this track. Feel free to get creative by combining sub genres within the dominant macro-genre, but please choose logically based on the above inputs. Output only the final micro-genre as a concise string.
 """
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
