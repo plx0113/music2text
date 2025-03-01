@@ -379,7 +379,7 @@ Here are typical BPM ranges for various genres:
     Rock: 110–140 BPM
     Metal: 100–160 BPM
 
-Using your comprehensive expertise, generate a creative and highly accurate micro-genre for this track. Output only the final micro-genre as a concise string.
+Using your comprehensive expertise and creativity gererate ahighly accurate micro-genre for this track. Output only the final micro-genre as a concise string.
 """
                         response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
@@ -423,7 +423,7 @@ Data:
 - Spectral Bandwidth: {spectral_bandwidth:.2f}
 
 Instructions:
-1. Begin by stating the genre "{final_micro_genre}".
+1. Begin by explicitly stating the genre "{final_micro_genre}".
 2. Pretend you are a music critic for Pitchfork magazine, but never mention Pitchfork.
 3. Write a single, concise, and evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
 4. Do not mention technical details such as BPM or key.
