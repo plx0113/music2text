@@ -280,6 +280,13 @@ if __name__ == "__main__":
 
     # Optional: Lyrics input
     lyrics_input = st.text_area("Optional: Paste song lyrics here for analysis", "")
+
+    # Sanitize user input before processing
+    lyrics_input = process_user_input(lyrics_input)
+
+    if lyrics_input == "Invalid input." or lyrics_input == "Unsupported characters detected.":
+        st.error("Invalid input detected. Please enter appropriate lyrics.")
+        st.stop()
     
     if audio_file is not None:
     # Extract just the song name without extension
