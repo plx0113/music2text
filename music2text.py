@@ -75,20 +75,26 @@ def process_user_input(text):
     """Sanitize, validate, and filter user input before processing."""
     logging.debug(f"DEBUG: Raw input received -> {text}")
 
-    text = strip_html_tags(text)  # Remove HTML/JS
-    text = limit_text_length(text)  # Trim to a reasonable length
+    text = strip_html_tags(text)  
+    text = limit_text_length(text)  
     logging.debug(f"DEBUG: After cleaning -> {text}")
 
     if detect_code_injection(text):
-        logging.debug(f"DEBUG: Code injection detected! -> {text}")
+        logging.warning(f"WARNING: Possible code injection attempt! -> {text}")
         return "Invalid input."
 
     if not validate_lyrics_input(text):
-        logging.debug(f"DEBUG: Character validation failed! -> {text}")
+        logging.warning(f"WARNING: Unsupported characters detected! -> {text}")
         return "Unsupported characters detected."
 
+    if not check_long_words(text):
+        logging.warning(f"WARNING: Long word detected in input -> {text}")
+        return "Invalid input: word too long."
+
+    text = remove_invisible_chars(text)
+
     logging.debug(f"DEBUG: Input passed validation -> {text}")
-    return text  # Proceed with cleaned input
+    return text
 
 # Set your OpenAI API key from the environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
