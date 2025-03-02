@@ -24,6 +24,9 @@ from concurrent.futures import ThreadPoolExecutor
 import re
 import html
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def strip_html_tags(text):
     """Remove any HTML/JS from the input."""
     return html.unescape(re.sub(r'<[^>]*>', '', text))
@@ -62,10 +65,6 @@ def process_user_input(text):
         return "Unsupported characters detected."
 
     return text  # Proceed with cleaned input
-
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Set your OpenAI API key from the environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
