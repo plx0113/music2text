@@ -28,16 +28,20 @@ def strip_html_tags(text):
     """Remove any HTML/JS from the input."""
     return html.unescape(re.sub(r'<[^>]*>', '', text))
 
-def limit_text_length(text, max_length=2000):
+def limit_text_length(text, max_length=5000):
     """Truncate text to prevent overly long inputs."""
     return text[:max_length]
 
 def detect_code_injection(text):
-    """Check for potential code injection patterns."""
-    blacklisted_terms = ["import ", "exec(", "eval(", "os.system(", "subprocess", "class ", "def "]
-    if any(term in text.lower() for term in blacklisted_terms):
-        logging.warning(f"Suspicious input detected: {text}")
-        return True
+    """Check for actual code injection, not just random words."""
+    blacklisted_patterns = [
+        r"import\s", r"exec\(", r"eval\(", r"os\.system\(", r"subprocess",
+        r"class\s", r"def\s", r"lambda\s", r"__import__"
+    ]
+    for pattern in blacklisted_patterns:
+        if re.search(pattern, text, re.IGNORECASE):
+            logging.warning(f"Potential code detected: {text}")
+            return True
     return False
 
 def validate_lyrics_input(text):
