@@ -406,7 +406,7 @@ Instructions:
 1. Begin by explicitly stating the genre "{final_micro_genre}".
 2. Pretend you are a music critic for Pitchfork magazine, but do not mention Pitchfork.
 3. Analyze the provided lyrics—discuss wordplay, meaning, rhyme scheme, and how they complement the track's musical style.
-4. Write two, concise, evocative paragraphs reviewing the track, combining insights from both the music and the lyrics.
+4. Write two, concise, evocative paragraphs reviewing the track, using lyrical insight in the first paragraph and music analysis in the second.
 5. Do not mention technical details such as BPM or key.
 """
                         else:
