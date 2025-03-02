@@ -32,8 +32,9 @@ logging.basicConfig(
 )
 
 def strip_html_tags(text):
-    """Remove any HTML/JS from the input."""
-    return html.unescape(re.sub(r'<[^>]*>', '', text))
+    """Remove full HTML tags while allowing safe symbols like <3."""
+    text = html.unescape(text)  # Decode entities like &lt;
+    return re.sub(r'<[^>\n]*?>', '', text)  # Remove actual HTML tags
 
 def limit_text_length(text, max_length=2000):
     """Truncate text to prevent overly long inputs."""
@@ -53,11 +54,22 @@ def detect_code_injection(text):
 
 def validate_lyrics_input(text):
     """Ensure input contains only valid characters for lyrics."""
-    # Allow letters, numbers, spaces, basic punctuation, and common lyric symbols
-    if not re.match(r"^[a-zA-Z0-9\s.,!?'\n\-+*$#@()&%\":;]+$", text):
+    if not re.match(r"^[a-zA-Z0-9\s.,!?'\n\-+*$#@()&%\":;]+$|<3", text):
         logging.debug(f"DEBUG: Character validation failed! -> {text}")
         return False
     return True
+
+def check_long_words(text, max_word_length=50):
+    """Rejects input if any single word exceeds a given length."""
+    for word in text.split():
+        if len(word) > max_word_length:
+            logging.debug(f"DEBUG: Long word detected! -> {word}")
+            return False
+    return True
+
+def remove_invisible_chars(text):
+    """Remove zero-width characters, control characters, and invisible Unicode."""
+    return re.sub(r'[\u200B-\u200D\uFEFF]', '', text)  # Removes ZWSP, BOM, etc.
 
 def process_user_input(text):
     """Sanitize, validate, and filter user input before processing."""
