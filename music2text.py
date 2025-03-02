@@ -24,50 +24,58 @@ from concurrent.futures import ThreadPoolExecutor
 import re
 import html
 
-# Configure logging
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging to capture debug output
+logging.basicConfig(
+    filename="app.log",  # Log to a file
+    level=logging.DEBUG,  # Ensure debug messages are captured
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 def strip_html_tags(text):
     """Remove any HTML/JS from the input."""
     return html.unescape(re.sub(r'<[^>]*>', '', text))
 
-def limit_text_length(text, max_length=5000):
+def limit_text_length(text, max_length=2000):
     """Truncate text to prevent overly long inputs."""
     return text[:max_length]
 
 def detect_code_injection(text):
-    """Check for actual code injection, not just random words."""
+    """Check for actual code injection, not normal words."""
     blacklisted_patterns = [
-        r"import\s", r"exec\(", r"eval\(", r"os\.system\(", r"subprocess",
-        r"class\s", r"def\s", r"lambda\s", r"__import__"
+        r"\bimport\b", r"\bexec\b", r"\beval\b", r"\bos\.system\b", r"\bsubprocess\b",
+        r"\bclass\b", r"\bdef\b", r"\blambda\b", r"__import__"
     ]
     for pattern in blacklisted_patterns:
         if re.search(pattern, text, re.IGNORECASE):
-            logging.warning(f"Potential code detected: {text}")
+            logging.debug(f"DEBUG: Code injection detected! -> {text}")
             return True
     return False
 
 def validate_lyrics_input(text):
     """Ensure input contains only valid characters for lyrics."""
-    return bool(re.match(r"^[a-zA-Z0-9\s.,!?'\n-]+$", text))
+    # Allow letters, numbers, spaces, basic punctuation, and common lyric symbols
+    if not re.match(r"^[a-zA-Z0-9\s.,!?'\n\-+*$#@()&%\":;]+$", text):
+        logging.debug(f"DEBUG: Character validation failed! -> {text}")
+        return False
+    return True
 
 def process_user_input(text):
     """Sanitize, validate, and filter user input before processing."""
-    print(f"DEBUG: Raw input received -> {text}")  # Show original input
+    logging.debug(f"DEBUG: Raw input received -> {text}")
 
     text = strip_html_tags(text)  # Remove HTML/JS
     text = limit_text_length(text)  # Trim to a reasonable length
-    print(f"DEBUG: After cleaning -> {text}")  # Show cleaned input
+    logging.debug(f"DEBUG: After cleaning -> {text}")
 
     if detect_code_injection(text):
-        print(f"DEBUG: Code injection detected! -> {text}")
+        logging.debug(f"DEBUG: Code injection detected! -> {text}")
         return "Invalid input."
 
     if not validate_lyrics_input(text):
-        print(f"DEBUG: Character validation failed! -> {text}")
+        logging.debug(f"DEBUG: Character validation failed! -> {text}")
         return "Unsupported characters detected."
 
-    print(f"DEBUG: Input passed validation -> {text}")
+    logging.debug(f"DEBUG: Input passed validation -> {text}")
     return text  # Proceed with cleaned input
 
 # Set your OpenAI API key from the environment variable
