@@ -126,58 +126,51 @@ def extract_audio_features(audio_file_path):
         # Compute HPSS once: separate harmonic and percussive components.
         y_harmonic, y_percussive = librosa.effects.hpss(y)
 
-        # BPM Detection with improved candidate selection using the percussive signal
+        # BPM Detection with error handling using the percussive signal
         try:
-            # Compute onset strength using both median and mean aggregation, then average them
-            onset_env_med = librosa.onset.onset_strength(y=y_percussive, sr=sr, aggregate=np.median)
-            onset_env_mean = librosa.onset.onset_strength(y=y_percussive, sr=sr, aggregate=np.mean)
-            onset_env = (onset_env_med + onset_env_mean) / 2
-
-            def compute_candidate_tempo(onset_env, sr, candidate_start, hop_length=512, tightness=100):
-                try:
-                    cand_tempo, cand_beats = librosa.beat.beat_track(
-                        onset_envelope=onset_env,
+            # Use the percussive component for onset strength estimation
+            onset_env = librosa.onset.onset_strength(y=y_percussive, sr=sr, aggregate=np.median)
+            tempo, beats = librosa.beat.beat_track(
+                onset_envelope=onset_env, 
+                sr=sr,
+                hop_length=512,
+                start_bpm=120,
+                tightness=100
+            )
+            
+            if len(beats) > 0:
+                beat_strength = librosa.util.normalize(onset_env)
+                confidence = float(np.mean(beat_strength[beats]))  # Convert to float
+                logging.info(f"Beat detection confidence: {confidence:.2f}")
+                
+                if confidence < 0.4:
+                    alt_tempo, alt_beats = librosa.beat.beat_track(
+                        onset_envelope=onset_env, 
                         sr=sr,
-                        hop_length=hop_length,
-                        start_bpm=candidate_start,
-                        tightness=tightness
+                        hop_length=512,
+                        start_bpm=float(tempo)*0.5
                     )
-                    if len(cand_beats) > 0:
-                        cand_confidence = float(np.mean(librosa.util.normalize(onset_env)[cand_beats]))
-                    else:
-                        cand_confidence = 0.0
-                    return cand_tempo, cand_beats, cand_confidence
-                except Exception as e:
-                    logging.error(f"Candidate BPM detection error with start_bpm {candidate_start}: {e}")
-                    return 0.0, [], 0.0
-
-            # Compute initial candidate with a standard starting BPM of 120
-            initial_tempo, initial_beats, initial_conf = compute_candidate_tempo(onset_env, sr, 120)
-            candidates = [(initial_tempo, initial_beats, initial_conf, 1.0)]
-
-            # Also try candidates at half and double the initial tempo
-            for factor in [0.5, 2.0]:
-                candidate_start = initial_tempo * factor if initial_tempo > 0 else 120 * factor
-                tempo_cand, beats_cand, conf_cand = compute_candidate_tempo(onset_env, sr, candidate_start)
-                candidates.append((tempo_cand, beats_cand, conf_cand, factor))
-
-            # Select the candidate with the highest confidence
-            best_candidate = max(candidates, key=lambda x: x[2])
-            tempo, beats, confidence, factor = best_candidate
-            logging.info(f"Selected candidate factor {factor}: {tempo:.1f} BPM with confidence {confidence:.2f}")
-
+                    if len(alt_beats) > 0:
+                        alt_confidence = float(np.mean(librosa.util.normalize(onset_env)[alt_beats]))
+                        if alt_confidence > confidence * 1.2:
+                            tempo = float(alt_tempo)
+                            beats = alt_beats
+                            confidence = alt_confidence
+                            logging.info(f"Using half-tempo: {tempo:.1f} BPM with confidence {confidence:.2f}")
+            
+            tempo = float(tempo)
             # Adjust BPM if it is out of the desired range
             if tempo < 70:
-                logging.info(f"Detected BPM below 70, doubling BPM to: {tempo * 2:.1f}")
                 tempo = tempo * 2
+                logging.info(f"Detected BPM below 70, doubling BPM to: {tempo:.1f}")
             elif tempo > 180:
-                logging.info(f"Detected BPM above 180, halving BPM to: {tempo / 2:.1f}")
                 tempo = tempo / 2
-
+                logging.info(f"Detected BPM above 180, halving BPM to: {tempo:.1f}")
+    
         except Exception as e:
             logging.error(f"Error in tempo detection: {str(e)}")
             tempo = 120.0  # fallback tempo
-            
+
         # Key Detection and additional features
         try:
             chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
