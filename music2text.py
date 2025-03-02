@@ -123,9 +123,13 @@ def extract_audio_features(audio_file_path):
         if y is None or len(y) == 0:
             raise ValueError("Librosa failed: Empty or unreadable file")
 
-        # BPM Detection with error handling
+        # Compute HPSS once: separate harmonic and percussive components.
+        y_harmonic, y_percussive = librosa.effects.hpss(y)
+
+        # BPM Detection with error handling using the percussive signal
         try:
-            onset_env = librosa.onset.onset_strength(y=y, sr=sr, aggregate=np.median)
+            # Use the percussive component for onset strength estimation
+            onset_env = librosa.onset.onset_strength(y=y_percussive, sr=sr, aggregate=np.median)
             tempo, beats = librosa.beat.beat_track(
                 onset_envelope=onset_env, 
                 sr=sr,
@@ -144,17 +148,17 @@ def extract_audio_features(audio_file_path):
                         onset_envelope=onset_env, 
                         sr=sr,
                         hop_length=512,
-                        start_bpm=float(tempo)*0.5  # Convert tempo to float
+                        start_bpm=float(tempo)*0.5
                     )
                     if len(alt_beats) > 0:
                         alt_confidence = float(np.mean(librosa.util.normalize(onset_env)[alt_beats]))
                         if alt_confidence > confidence * 1.2:
-                            tempo = float(alt_tempo)  # Convert to float
+                            tempo = float(alt_tempo)
                             beats = alt_beats
                             confidence = alt_confidence
                             logging.info(f"Using half-tempo: {tempo:.1f} BPM with confidence {confidence:.2f}")
             
-            tempo = float(tempo)  # Ensure tempo is a float
+            tempo = float(tempo)
             # Adjust BPM if it is out of the desired range
             if tempo < 70:
                 tempo = tempo * 2
@@ -167,33 +171,25 @@ def extract_audio_features(audio_file_path):
             logging.error(f"Error in tempo detection: {str(e)}")
             tempo = 120.0  # fallback tempo
 
-        # Key Detection
+        # Key Detection and additional features
         try:
             chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
             chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr, n_chroma=12)
-            y_harmonic, _ = librosa.effects.hpss(y)
-            
-            # Get initial key
-            tonal = Tonal_Fragment(y, sr)
+            # Use the harmonic component for key detection for more robust tonal analysis.
+            tonal = Tonal_Fragment(y_harmonic, sr)
             key = tonal.key
             
-            # Additional features with error handling
             rms = librosa.feature.rms(y=y)[0]
             articulation_rate = float(np.mean(onset_env))
             spectral_centroid = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
             spectral_bandwidth = float(np.mean(librosa.feature.spectral_bandwidth(y=y, sr=sr)))
             
-            # HPSS decomposition
-            y_harmonic, y_percussive = librosa.effects.hpss(y)
-            
-            # MFCCs
             mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=33)
             
-            # Convert numpy values to Python native types
             return (
                 float(tempo),
                 str(key),
-                rms.astype(float),  # Convert to float array
+                rms.astype(float),
                 float(articulation_rate),
                 float(spectral_centroid),
                 float(spectral_bandwidth),
