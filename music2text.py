@@ -25,7 +25,7 @@ import re
 import html
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def strip_html_tags(text):
     """Remove any HTML/JS from the input."""
