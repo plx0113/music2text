@@ -53,17 +53,21 @@ def validate_lyrics_input(text):
 
 def process_user_input(text):
     """Sanitize, validate, and filter user input before processing."""
+    print(f"DEBUG: Raw input received -> {text}")  # Show original input
+
     text = strip_html_tags(text)  # Remove HTML/JS
     text = limit_text_length(text)  # Trim to a reasonable length
+    print(f"DEBUG: After cleaning -> {text}")  # Show cleaned input
 
     if detect_code_injection(text):
-        print("DEBUG: Code injection detected!")
+        print(f"DEBUG: Code injection detected! -> {text}")
         return "Invalid input."
 
     if not validate_lyrics_input(text):
-        print("DEBUG: Character validation failed!")
+        print(f"DEBUG: Character validation failed! -> {text}")
         return "Unsupported characters detected."
 
+    print(f"DEBUG: Input passed validation -> {text}")
     return text  # Proceed with cleaned input
 
 # Set your OpenAI API key from the environment variable
