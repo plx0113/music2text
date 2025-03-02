@@ -21,6 +21,41 @@ from transformers import Wav2Vec2FeatureExtractor, AutoModelForAudioClassificati
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import re
+import html
+
+def strip_html_tags(text):
+    """Remove any HTML/JS from the input."""
+    return html.unescape(re.sub(r'<[^>]*>', '', text))
+
+def limit_text_length(text, max_length=2000):
+    """Truncate text to prevent overly long inputs."""
+    return text[:max_length]
+
+def detect_code_injection(text):
+    """Check for potential code injection patterns."""
+    blacklisted_terms = ["import ", "exec(", "eval(", "os.system(", "subprocess", "class ", "def "]
+    if any(term in text.lower() for term in blacklisted_terms):
+        logging.warning(f"Suspicious input detected: {text}")
+        return True
+    return False
+
+def validate_lyrics_input(text):
+    """Ensure input contains only valid characters for lyrics."""
+    return bool(re.match(r"^[a-zA-Z0-9\s.,!?'\n-]+$", text))
+
+def process_user_input(text):
+    """Sanitize, validate, and filter user input before processing."""
+    text = strip_html_tags(text)  # Remove HTML/JS
+    text = limit_text_length(text)  # Trim to a reasonable length
+
+    if detect_code_injection(text):
+        return "Invalid input."
+
+    if not validate_lyrics_input(text):
+        return "Unsupported characters detected."
+
+    return text  # Proceed with cleaned input
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -281,12 +316,13 @@ if __name__ == "__main__":
     # Optional: Lyrics input
     lyrics_input = st.text_area("Optional: Paste song lyrics here for analysis", "")
 
-    # Sanitize user input before processing
-    lyrics_input = process_user_input(lyrics_input)
+    # Only process if text is provided
+    if lyrics_input.strip():
+        lyrics_input = process_user_input(lyrics_input)
 
-    if lyrics_input == "Invalid input." or lyrics_input == "Unsupported characters detected.":
-        st.error("Invalid input detected. Please enter appropriate lyrics.")
-        st.stop()
+        if lyrics_input in ["Invalid input.", "Unsupported characters detected."]:
+            st.error("Invalid input detected. Please enter appropriate lyrics.")
+            st.stop()
     
     if audio_file is not None:
     # Extract just the song name without extension
