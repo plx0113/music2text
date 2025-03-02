@@ -54,12 +54,15 @@ def process_user_input(text):
     text = limit_text_length(text)  # Trim to a reasonable length
 
     if detect_code_injection(text):
+        print("DEBUG: Code injection detected!")
         return "Invalid input."
 
     if not validate_lyrics_input(text):
+        print("DEBUG: Character validation failed!")
         return "Unsupported characters detected."
 
     return text  # Proceed with cleaned input
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
