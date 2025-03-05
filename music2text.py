@@ -23,6 +23,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import re
 import html
+from logging.handlers import RotatingFileHandler
 
 # Set up logging to capture debug output
 logging.basicConfig(
