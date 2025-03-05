@@ -26,8 +26,8 @@ import html
 
 # Set up logging to capture debug output
 logging.basicConfig(
-    filename="app.log",  # Log to a file
-    level=logging.DEBUG,  # Ensure debug messages are captured
+    handlers=[RotatingFileHandler("app.log", maxBytes=100000000, backupCount=5)],
+    level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
