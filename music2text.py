@@ -298,7 +298,7 @@ def segment_audio(y, sr, segment_duration=10):
     segments = [y[i * segment_length:(i + 1) * segment_length] for i in range(num_segments)]
     return segments
 
-def call_openai_with_retry(messages, model="gpt-4", max_retries=5, initial_delay=1):
+def call_openai_with_retry(messages, model="gpt-4.1", max_retries=5, initial_delay=1):
     for attempt in range(max_retries):
         try:
             response = openai.ChatCompletion.create(model=model, messages=messages)
@@ -313,7 +313,7 @@ def call_openai_with_retry(messages, model="gpt-4", max_retries=5, initial_delay
                 logging.error("Max retries reached. Aborting.")
                 raise e
 
-async def async_openai_call(messages, model="gpt-4"):
+async def async_openai_call(messages, model="gpt-4.1"):
     loop = asyncio.get_running_loop()
     response = await loop.run_in_executor(None, call_openai_with_retry, messages, model)
     return response
@@ -444,16 +444,16 @@ Output ONLY the final micro-genre name as a concise string. Do not provide expla
                         track_title = os.path.splitext(audio_file.name)[0]
                         dynamics_range = float(np.max(rms) - np.min(rms)) if rms is not None else None
     
-                        if y is not None and sr is not None:
-                            fig, ax = plt.subplots()
-                            D = np.abs(librosa.stft(y))
-                            img = librosa.display.specshow(librosa.amplitude_to_db(D, ref=np.max),
-                                                           y_axis='log', x_axis='time', sr=sr, ax=ax)
-                            ax.set_title('Power Spectrogram')
-                            fig.colorbar(img, ax=ax)
-                            st.pyplot(fig)
-                        else:
-                            st.warning("Could not generate spectrogram.")
+                        # if y is not None and sr is not None:
+                            # fig, ax = plt.subplots()
+                            # D = np.abs(librosa.stft(y))
+                            # img = librosa.display.specshow(librosa.amplitude_to_db(D, ref=np.max),
+                                                           # y_axis='log', x_axis='time', sr=sr, ax=ax)
+                            # ax.set_title('Power Spectrogram')
+                            # fig.colorbar(img, ax=ax)
+                            # st.pyplot(fig)
+                        # else:
+                            # st.warning("Could not generate spectrogram.")
     
                         feature_summary = {
                             "tempo": tempo,
@@ -484,10 +484,10 @@ Lyrics:
 
 Instructions:
 1. Begin by explicitly stating the genre "{final_micro_genre}".
-2. Pretend you are a music critic for Pitchfork magazine, but do not mention Pitchfork.
-3. Analyze the provided lyrics—discuss wordplay, meaning, rhyme scheme, and how they complement the track's musical style.
-4. Write two, concise, evocative paragraphs reviewing the track, using lyrical insight in the first paragraph and music analysis in the second.
-5. Do not mention technical details such as BPM or key.
+2. Write a professional music review that balances creative insight with technical clarity.
+3. In the first paragraph, focus on the lyrics: highlight narrative themes, wordplay, tone, rhyme scheme, and emotional resonance.
+4. In the second paragraph, discuss the musical and technical aspects — tempo, key, articulation rate, spectral features, and dynamics. Show how they support the track’s overall vibe.
+5. Use an intelligent, readable tone — no overly poetic flourishes, but keep the language engaging and informative.
 """
                         else:
                             prompt_for_analysis = f"""
@@ -501,9 +501,10 @@ Data:
 
 Instructions:
 1. Begin by explicitly stating the genre "{final_micro_genre}".
-2. Pretend you are a music critic for Pitchfork magazine, but do not mention Pitchfork.
-3. Write a single, concise, evocative paragraph reviewing the track—focusing on its style, genre influences, and emotional impact.
-4. Do not mention technical details such as BPM or key.
+2. Write 2 concise, intelligent paragraphs reviewing the track — focusing on style, instrumental texture, genre influences, and emotional or atmospheric impact.
+3. Use available technical data (such as BPM, key, articulation rate, spectral features, and dynamics) to support your analysis.
+4. Avoid generic statements. Base your review on observable details and inferred musical intent. 
+5. Use an accessible, professional tone — not too dry, not too poetic.
 """
 
 
