@@ -419,26 +419,29 @@ if __name__ == "__main__":
                         st.write("Normalized Macro Genre Scores:", normalized_genres)        
 
                         # --- Feedback Loop: Generate Final Micro-Genre via ChatGPT ---
-                        prompt_for_micro_genre = f"""
-You are a music genre expert with deep musical knowledge across mainstream and micro-genres. Given these inputs:
+                        genre_system_instruction = "You are a music genre expert with deep musical knowledge across mainstream and micro-genres. You generate real-world, punchy micro-genre names based on track data. Always respond with a short genre string. No explanations."
 
-    Normalized Genre Scores (JSON): {normalized_genres}
-    BPM: {tempo} 
-    Track Title: "{track_title}" 
-    Creative Constraints:
-        Prioritize the highest-scoring genre(s) as the foundation.
-        Blend secondary genres to add subtle influences.
-        Consider BPM and typical tempos of similar styles.
-        If the track title suggests a known song or vibe, incorporate relevant stylistic cues.
-        Generate a short, punchy, and natural-sounding micro-genre name.
-        Be inventive, but keep it rooted in real-world musical trends.
+                        genre_user_prompt = f"""
+                        Normalized Genre Scores (JSON): {normalized_genres}
+                        BPM: {tempo} 
+                        Track Title: "{track_title}"
 
-Output ONLY the final micro-genre name as a concise string. Do not provide explanations.
-"""
-                        response_genre = call_openai_with_retry([{"role": "system", "content": prompt_for_micro_genre}])
+                        Creative Constraints:
+                        - Prioritize the highest-scoring genre(s) as the foundation.
+                        - Blend secondary genres to add subtle influences.
+                        - Consider BPM and typical tempos of similar styles.
+                        - If the track title suggests a known song or vibe, incorporate relevant stylistic cues.
+                        - Generate a short, punchy, and natural-sounding micro-genre name.
+                        """
+
+                        response_genre = call_openai_with_retry([
+                            {"role": "system", "content": genre_system_instruction},
+                            {"role": "user", "content": genre_user_prompt}
+                        ])
+
                         final_micro_genre = response_genre["choices"][0]["message"]["content"].strip()
                         progress_bar.progress(80)
-                        # --- End Feedback Loop ---
+                                                # --- End Feedback Loop ---
     
                         # --- Step 4: Prepare and Display Analysis ---
                         track_title = os.path.splitext(audio_file.name)[0]
@@ -467,52 +470,50 @@ Output ONLY the final micro-genre name as a concise string. Do not provide expla
                         }
                         audio_analysis = {"features": convert_numpy_data(feature_summary)}
     
-                        audio_analysis = {"features": convert_numpy_data(feature_summary)}
-
                         if lyrics_input.strip():
-                            prompt_for_analysis = f"""
-Data:
-- Final Micro-Genre: {final_micro_genre}
-- File Name: {track_title}
-- Articulation Rate: {articulation_rate:.2f}
-- Dynamics Range: {dynamics_range:.2f}
-- Spectral Centroid: {spectral_centroid:.2f}
-- Spectral Bandwidth: {spectral_bandwidth:.2f}
+                            analysis_system_instruction = "You are a professional music critic who writes intelligent, evidence-based reviews. You balance creative insight with technical analysis. Avoid filler. Write with clarity, not fluff."
 
-Lyrics:
-{lyrics_input}
+                            analysis_user_prompt = f"""
+                            Genre: {final_micro_genre}
+                            Title: "{track_title}"
+                            Articulation Rate: {articulation_rate:.2f}
+                            Dynamics Range: {dynamics_range:.2f}
+                            Spectral Centroid: {spectral_centroid:.2f}
+                            Spectral Bandwidth: {spectral_bandwidth:.2f}
 
-Instructions:
-1. Begin by explicitly stating the genre "{final_micro_genre}".
-2. Write a professional music review that balances creative insight with technical clarity.
-3. In the first paragraph, focus on the lyrics: highlight narrative themes, wordplay, tone, rhyme scheme, and emotional resonance.
-4. In the second paragraph, discuss the musical and technical aspects — tempo, key, articulation rate, spectral features, and dynamics. Show how they support the track’s overall vibe.
-5. Use an intelligent, readable tone — no overly poetic flourishes, but keep the language engaging and informative.
-"""
+                            Lyrics:
+                            {lyrics_input}
+
+                            Instructions:
+                            1. Begin by explicitly stating the genre "{final_micro_genre}".
+                            2. In paragraph 1, analyze the lyrics — themes, tone, rhyme scheme, wordplay, emotional impact.
+                            3. In paragraph 2, discuss the production — tempo, key, articulation, spectral shape, and dynamic character.
+                            4. Ground the analysis in real details — no vague praise. Be insightful and clear.
+                            """
+                            
                         else:
-                            prompt_for_analysis = f"""
-Data:
-- Final Micro-Genre: {final_micro_genre}
-- File Name: {track_title}
-- Articulation Rate: {articulation_rate:.2f}
-- Dynamics Range: {dynamics_range:.2f}
-- Spectral Centroid: {spectral_centroid:.2f}
-- Spectral Bandwidth: {spectral_bandwidth:.2f}
+                            analysis_system_instruction = "You are a professional music critic who writes intelligent, evidence-based reviews. You analyze musical details and avoid vague language. Write concisely and clearly without fluff."
 
-Instructions:
-1. Begin by explicitly stating the genre "{final_micro_genre}".
-2. Write 2 concise, intelligent paragraphs reviewing the track — focusing on style, instrumental texture, genre influences, and emotional or atmospheric impact.
-3. Use available technical data (such as BPM, key, articulation rate, spectral features, and dynamics) to support your analysis.
-4. Avoid generic statements. Base your review on observable details and inferred musical intent. 
-5. Use an accessible, professional tone — not too dry, not too poetic.
-"""
+                            analysis_user_prompt = f"""
+                            Genre: {final_micro_genre}
+                            Title: "{track_title}"
+                            Articulation Rate: {articulation_rate:.2f}
+                            Dynamics Range: {dynamics_range:.2f}
+                            Spectral Centroid: {spectral_centroid:.2f}
+                            Spectral Bandwidth: {spectral_bandwidth:.2f}
 
-
+                            Instructions:
+                            1. Start by naming the genre "{final_micro_genre}".
+                            2. Paragraph 1: Describe the musical identity — genre influences, instrumentation, emotional tone.
+                            3. Paragraph 2: Analyze production using the available metrics — articulation, dynamics, spectral shape, tempo, and key.
+                            4. Avoid filler. Use direct language and concrete observations.
+                            """
                         response_analysis = call_openai_with_retry([
-                            {"role": "system", "content": prompt_for_analysis},
-                            {"role": "user", "content": json.dumps(audio_analysis)}
-                        ])
-                        st.write("AI Analysis:", response_analysis["choices"][0]["message"]["content"])
+                                    {"role": "system", "content": analysis_system_instruction},
+                                    {"role": "user", "content": analysis_user_prompt}
+                                ])
+                        review_text = response_analysis["choices"][0]["message"]["content"].strip()
+                        st.write("AI Analysis:", review_text)
                         progress_bar.progress(100)
                     else:
                         st.warning("Genre classifier could not be loaded.")
