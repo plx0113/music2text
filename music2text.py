@@ -504,7 +504,7 @@ if __name__ == "__main__":
 
                             Instructions:
                             1. Start by naming the genre "{final_micro_genre}".
-                            2. Paragraph 1: Describe the musical identity — genre influences, instrumentation, emotional tone.
+                            2. Paragraph 1: Describe the musical identity — genre influences, instrumentation, emotional tone, since no lyrics were provided, do not mention them unless you specifically know the song.
                             3. Paragraph 2: Analyze production using the available metrics — articulation, dynamics, spectral shape, tempo, and key.
                             4. Avoid filler. Use direct language and concrete observations.
                             """
