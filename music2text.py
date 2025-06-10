@@ -13,7 +13,7 @@ import time
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 import pickle
-from essentia.tensorflow import TempoCNN
+import essentia.standard as es
 from sklearn.preprocessing import StandardScaler
 from transformers import pipeline  # For the HF pipeline
 import torch
