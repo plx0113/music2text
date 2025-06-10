@@ -1,6 +1,7 @@
 venv/
 __pycache__/
 *.log
+app.log*
 *.pyc
 *.save
 music_genres_classification/model.safetensors
