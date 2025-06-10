@@ -13,6 +13,7 @@ import time
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 import pickle
+from essentia.tensorflow import TempoCNN
 from sklearn.preprocessing import StandardScaler
 from transformers import pipeline  # For the HF pipeline
 import torch
@@ -198,50 +199,24 @@ def extract_audio_features(audio_file_path):
         # Compute HPSS once: separate harmonic and percussive components.
         y_harmonic, y_percussive = librosa.effects.hpss(y)
 
-        # BPM Detection with error handling using the percussive signal
+        # BPM Detection using TempoCNN
         try:
-            # Use the percussive component for onset strength estimation
-            onset_env = librosa.onset.onset_strength(y=y_percussive, sr=sr, aggregate=np.median)
-            tempo, beats = librosa.beat.beat_track(
-                onset_envelope=onset_env, 
-                sr=sr,
-                hop_length=512,
-                start_bpm=120,
-                tightness=100
-            )
+            # Resample to 11025 Hz for TempoCNN
+            y_resampled = librosa.resample(y, orig_sr=sr, target_sr=11025)
             
-            if len(beats) > 0:
-                beat_strength = librosa.util.normalize(onset_env)
-                confidence = float(np.mean(beat_strength[beats]))  # Convert to float
-                logging.info(f"Beat detection confidence: {confidence:.2f}")
-                
-                if confidence < 0.4:
-                    alt_tempo, alt_beats = librosa.beat.beat_track(
-                        onset_envelope=onset_env, 
-                        sr=sr,
-                        hop_length=512,
-                        start_bpm=float(tempo)*0.5
-                    )
-                    if len(alt_beats) > 0:
-                        alt_confidence = float(np.mean(librosa.util.normalize(onset_env)[alt_beats]))
-                        if alt_confidence > confidence * 1.2:
-                            tempo = float(alt_tempo)
-                            beats = alt_beats
-                            confidence = alt_confidence
-                            logging.info(f"Using half-tempo: {tempo:.1f} BPM with confidence {confidence:.2f}")
+            # Initialize TempoCNN
+            tempocnn = TempoCNN()
+            tempo = float(tempocnn(y_resampled))
             
-            tempo = float(tempo)
-            # Adjust BPM if it is out of the desired range
+            # Keep your existing tempo adjustment logic
             if tempo < 70:
                 tempo = tempo * 2
                 logging.info(f"Detected BPM below 70, doubling BPM to: {tempo:.1f}")
             elif tempo > 180:
                 tempo = tempo / 2
                 logging.info(f"Detected BPM above 180, halving BPM to: {tempo:.1f}")
-    
-        except Exception as e:
-            logging.error(f"Error in tempo detection: {str(e)}")
-            tempo = 120.0  # fallback tempo
+                
+            logging.info(f"TempoCNN detected BPM: {tempo:.1f}")
 
         # Key Detection and additional features
         try:
