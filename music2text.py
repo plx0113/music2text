@@ -199,14 +199,13 @@ def extract_audio_features(audio_file_path):
         # Compute HPSS once: separate harmonic and percussive components.
         y_harmonic, y_percussive = librosa.effects.hpss(y)
 
-        # BPM Detection using TempoCNN
+        # BPM Detection using Essentia
         try:
-            # Resample to 11025 Hz for TempoCNN
-            y_resampled = librosa.resample(y, orig_sr=sr, target_sr=11025)
+            # Use Essentia's RhythmExtractor2013 - more accurate than librosa
+            rhythm_extractor = es.RhythmExtractor2013(method="multifeature")
+            bpm, beats, beats_confidence, _, beats_intervals = rhythm_extractor(y)
             
-            # Initialize TempoCNN
-            tempocnn = TempoCNN()
-            tempo = float(tempocnn(y_resampled))
+            tempo = float(bpm)
             
             # Keep your existing tempo adjustment logic
             if tempo < 70:
@@ -216,7 +215,7 @@ def extract_audio_features(audio_file_path):
                 tempo = tempo / 2
                 logging.info(f"Detected BPM above 180, halving BPM to: {tempo:.1f}")
                 
-            logging.info(f"TempoCNN detected BPM: {tempo:.1f}")
+            logging.info(f"Essentia detected BPM: {tempo:.1f} (confidence: {beats_confidence:.2f})")
 
         # Key Detection and additional features
         try:
