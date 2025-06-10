@@ -13,7 +13,6 @@ import time
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 import pickle
-import essentia.standard as es
 from sklearn.preprocessing import StandardScaler
 from transformers import pipeline  # For the HF pipeline
 import torch
@@ -199,23 +198,50 @@ def extract_audio_features(audio_file_path):
         # Compute HPSS once: separate harmonic and percussive components.
         y_harmonic, y_percussive = librosa.effects.hpss(y)
 
-        # BPM Detection using Essentia
+        # BPM Detection with error handling using the percussive signal
         try:
-            # Use Essentia's RhythmExtractor2013 - more accurate than librosa
-            rhythm_extractor = es.RhythmExtractor2013(method="multifeature")
-            bpm, beats, beats_confidence, _, beats_intervals = rhythm_extractor(y)
+            # Use the percussive component for onset strength estimation
+            onset_env = librosa.onset.onset_strength(y=y_percussive, sr=sr, aggregate=np.median)
+            tempo, beats = librosa.beat.beat_track(
+                onset_envelope=onset_env, 
+                sr=sr,
+                hop_length=512,
+                start_bpm=120,
+                tightness=100
+            )
             
-            tempo = float(bpm)
+            if len(beats) > 0:
+                beat_strength = librosa.util.normalize(onset_env)
+                confidence = float(np.mean(beat_strength[beats]))  # Convert to float
+                logging.info(f"Beat detection confidence: {confidence:.2f}")
+                
+                if confidence < 0.4:
+                    alt_tempo, alt_beats = librosa.beat.beat_track(
+                        onset_envelope=onset_env, 
+                        sr=sr,
+                        hop_length=512,
+                        start_bpm=float(tempo)*0.5
+                    )
+                    if len(alt_beats) > 0:
+                        alt_confidence = float(np.mean(librosa.util.normalize(onset_env)[alt_beats]))
+                        if alt_confidence > confidence * 1.2:
+                            tempo = float(alt_tempo)
+                            beats = alt_beats
+                            confidence = alt_confidence
+                            logging.info(f"Using half-tempo: {tempo:.1f} BPM with confidence {confidence:.2f}")
             
-            # Keep your existing tempo adjustment logic
+            tempo = float(tempo)
+            # Adjust BPM if it is out of the desired range
             if tempo < 70:
                 tempo = tempo * 2
                 logging.info(f"Detected BPM below 70, doubling BPM to: {tempo:.1f}")
             elif tempo > 180:
                 tempo = tempo / 2
                 logging.info(f"Detected BPM above 180, halving BPM to: {tempo:.1f}")
-                
-            logging.info(f"Essentia detected BPM: {tempo:.1f} (confidence: {beats_confidence:.2f})")
+    
+        except Exception as e:
+            logging.error(f"Error in tempo detection: {str(e)}")
+            tempo = 120.0  # fallback tempo
 
         # Key Detection and additional features
         try:

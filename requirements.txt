@@ -8,6 +8,3 @@ scikit-learn>=1.3.2,<1.4.0
 transformers>=4.46.3,<4.47.0
 torch>=2.2.0
 IPython>=8.13.2
-essentia-tensorflow>=2.1b6.dev1110
-tensorflow>=2.8.0,<2.16  # Essentia compatibility range
-numpy>=1.21.0
